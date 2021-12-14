@@ -7,10 +7,7 @@
 
 void Context::init_validation_layers() {
     TRACE("initializing validation layers")
-    uint32_t layer_count;
-    vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
-    std::vector<VkLayerProperties> available_layers(layer_count);
-    vkEnumerateInstanceLayerProperties(&layer_count, available_layers.data());
+    auto available_layers = vk::enumerateInstanceLayerProperties();
 
     for (const auto& layer : validation_layers) {
         bool found = false;
@@ -26,11 +23,9 @@ void Context::init_validation_layers() {
     }
 }
 
-bool Context::is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
-    VkPhysicalDeviceProperties props;
-    vkGetPhysicalDeviceProperties(device, &props);
-    VkPhysicalDeviceFeatures features;
-    vkGetPhysicalDeviceFeatures(device, &features);
+bool Context::is_device_suitable(vk::PhysicalDevice device, vk::SurfaceKHR surface) {
+    vk::PhysicalDeviceProperties props = device.getProperties();
+    vk::PhysicalDeviceFeatures features = device.getFeatures();
 
     QueueFamilies families = Context::get_queue_families_from_device(device, surface);
     if(!families.is_complete()) {
@@ -38,10 +33,7 @@ bool Context::is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface) 
     }
 
     //check device extensions
-    uint32_t extension_count;
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, nullptr);
-    std::vector<VkExtensionProperties> extensions(extension_count);
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, extensions.data());
+    std::vector<vk::ExtensionProperties> extensions = device.enumerateDeviceExtensionProperties();
 
     for (const auto &required_ext : device_extensions) {
         bool found = false;
@@ -63,23 +55,20 @@ bool Context::is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface) 
         return false;
     }
 
-    return props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && features.geometryShader;
+    return props.deviceType ==  vk::PhysicalDeviceType::eDiscreteGpu && features.geometryShader;
 }
 
-QueueFamilies Context::get_queue_families_from_device(VkPhysicalDevice device, VkSurfaceKHR surface) {
-    uint32_t queue_family_count = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, nullptr);
-    std::vector<VkQueueFamilyProperties> families(queue_family_count);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, families.data());
+QueueFamilies Context::get_queue_families_from_device(vk::PhysicalDevice device, vk::SurfaceKHR surface) {
+
+    std::vector<vk::QueueFamilyProperties> families = device.getQueueFamilyProperties();
 
     QueueFamilies result;
     for (uint32_t index = 0; index < families.size(); index++)
     {
-        if(families.at(index).queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+        if(families.at(index).queueFlags & vk::QueueFlagBits::eGraphics) {
             result.graphics = index;
         }
-        VkBool32 supports_present = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(device, index, surface, &supports_present);
+        vk::Bool32 supports_present = device.getSurfaceSupportKHR(index, surface);
         if(supports_present) {
             result.presentation = index;
         }
@@ -96,13 +85,12 @@ void Context::init() {
 
     TRACE("initializing vulkan instance")
 
-    VkApplicationInfo app_info{};
-    app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    app_info.pApplicationName = "vulkan test";
-    app_info.applicationVersion = VK_MAKE_VERSION(0, 0, 1);
-    app_info.pEngineName = "SVE";
-    app_info.engineVersion = VK_MAKE_VERSION(0, 0, 1);
-    app_info.apiVersion = VK_API_VERSION_1_0;
+    vk::ApplicationInfo app_info(
+        "vulkan test",
+        VK_MAKE_VERSION(0, 0, 1),
+        "SVE",
+        VK_MAKE_VERSION(0, 0, 1),
+        VK_API_VERSION_1_1);
 
     uint32_t glfw_extension_count = 0;
     const char **glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
@@ -111,15 +99,11 @@ void Context::init() {
         throw std::runtime_error("failed to get glfw required extensions");
     }
 
-    uint32_t extension_count = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, nullptr);
-    std::vector<VkExtensionProperties> extensions(extension_count);
-    vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, extensions.data());
+    std::vector<vk::ExtensionProperties> extensions = vk::enumerateInstanceExtensionProperties();
 
-    DEBUG(extension_count << " extensions available")
+    DEBUG(extensions.size() << " extensions available")
 
-    VkInstanceCreateInfo create_info{};
-    create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    vk::InstanceCreateInfo create_info{};
     create_info.pApplicationInfo = &app_info;
     create_info.enabledExtensionCount = glfw_extension_count;
     create_info.ppEnabledExtensionNames = glfw_extensions;
@@ -132,11 +116,12 @@ void Context::init() {
         create_info.enabledLayerCount = 0;
     }
 
-    if(vkCreateInstance(&create_info, nullptr, &instance) != VK_SUCCESS) {
+    if (vk::createInstance(&create_info, nullptr, &instance) != vk::Result::eSuccess)
+    {
         throw std::runtime_error("failed to create vulkan instance");
     }
 }
 
 void Context::close() {
-    vkDestroyInstance(instance, nullptr);
+    instance.destroy();
 }

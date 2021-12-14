@@ -3,13 +3,13 @@
 
 class Pipeline {
 public:
-    VkPipelineLayout layout;
-    VkPipeline pipeline;
-    void init(VkExtent2D viewport, VkRenderPass renderpass);
+    vk::PipelineLayout layout;
+    vk::Pipeline pipeline;
+    void init(vk::Extent2D viewport, vk::RenderPass renderpass);
     void close();
     Pipeline(Context &ctx) : context(ctx){};
 
 private:
-    VkShaderModule load_shader(const std::vector<char> &bytes);
+    vk::ShaderModule load_shader(const std::vector<char> &bytes);
     Context &context;
 };

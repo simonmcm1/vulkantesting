@@ -1,7 +1,9 @@
 #pragma once
 
+#include <vulkan/vulkan.hpp>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+
 #include <vector>
 #include <optional>
 
@@ -15,18 +17,18 @@ struct QueueFamilies {
 };
 
 struct SwapchainDetails {
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> present_modes;
-    VkSurfaceCapabilitiesKHR capabilities;
+    std::vector<vk::SurfaceFormatKHR> formats;
+    std::vector<vk::PresentModeKHR> present_modes;
+    vk::SurfaceCapabilitiesKHR capabilities;
 
     bool is_complete()
     {
         return !formats.empty() && !present_modes.empty();
     }
 
-    VkSurfaceFormatKHR choose_surface_format();
-    VkPresentModeKHR choose_present_mode();
-    VkExtent2D choose_swap_extent(VkExtent2D framebuffer_extent);
+    vk::SurfaceFormatKHR choose_surface_format();
+    vk::PresentModeKHR choose_present_mode();
+    vk::Extent2D choose_swap_extent(vk::Extent2D framebuffer_extent);
 };
 
 const std::vector<const char *>
@@ -38,22 +40,22 @@ const std::vector<const char*> device_extensions = {
 
 class Context {
 public:
-    VkInstance instance;
-    VkPhysicalDevice physical_device = VK_NULL_HANDLE;
-    VkDevice device;
+    vk::Instance instance;
+    vk::PhysicalDevice physical_device;
+    vk::Device device;
     QueueFamilies queue_families;
-    VkQueue graphics_queue;
-    VkQueue presentation_queue;
-    VkSurfaceKHR surface;
-    VkExtent2D framebuffer_extent;
+    vk::Queue graphics_queue;
+    vk::Queue presentation_queue;
+    vk::SurfaceKHR surface;
+    vk::Extent2D framebuffer_extent;
     bool framebuffer_resized = false;
-    
+
     void init();
     void close();
 
 
-    static QueueFamilies get_queue_families_from_device(VkPhysicalDevice device, VkSurfaceKHR surface);
-    static bool is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface);
+    static QueueFamilies get_queue_families_from_device(vk::PhysicalDevice device, vk::SurfaceKHR surface);
+    static bool is_device_suitable(vk::PhysicalDevice device, vk::SurfaceKHR surface);
 
 #ifdef NDEBUG
     const bool enable_validation_layers = false;

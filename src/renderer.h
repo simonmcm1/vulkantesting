@@ -33,11 +33,11 @@ public:
 private:
     Context &context;
     Swapchain swapchain;
-    VkRenderPass renderpass;
+    vk::RenderPass renderpass;
     Pipeline pipeline;
-    std::vector<VkFramebuffer> framebuffers;
+    std::vector<vk::Framebuffer> framebuffers;
     VkCommandPool command_pool = nullptr;
-    std::vector<VkCommandBuffer> command_buffers;
+    std::vector<vk::CommandBuffer> command_buffers;
     std::vector<FrameSync> sync;
 
     size_t current_frame = 0;

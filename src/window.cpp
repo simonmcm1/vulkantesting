@@ -42,17 +42,20 @@ void Window::on_framebuffer_resized(int w, int h) {
     framebuffer_height = h;
     framebuffer_width = w;
 
-    context.framebuffer_extent = {
+    context.framebuffer_extent = vk::Extent2D {
         static_cast<uint32_t>(framebuffer_width),
         static_cast<uint32_t>(framebuffer_height),
     };
 }
 
 void Window::create_surface() {
-    if(glfwCreateWindowSurface(context.instance, window, nullptr, &context.surface) != VK_SUCCESS) {
+    VkSurfaceKHR surface;
+    if (glfwCreateWindowSurface(context.instance, window, nullptr, &surface) != VK_SUCCESS)
+    {
         throw std::runtime_error("failed to create window surface");
     }
-    context.framebuffer_extent = {
+    context.surface = vk::SurfaceKHR(surface);
+    context.framebuffer_extent = vk::Extent2D{
         static_cast<uint32_t>(framebuffer_width),
         static_cast<uint32_t>(framebuffer_height),
     };

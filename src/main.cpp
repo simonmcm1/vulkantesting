@@ -64,7 +64,7 @@ int main() {
         Application app;
         app.run();
     } catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
+        std::cerr << "Caught Exception: " << e.what() << std::endl;
         return EXIT_FAILURE;
     }
 
