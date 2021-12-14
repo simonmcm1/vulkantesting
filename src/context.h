@@ -54,8 +54,10 @@ public:
     void close();
 
 
+    uint32_t find_memory_type(uint32_t type_filter, vk::MemoryPropertyFlags props);
     static QueueFamilies get_queue_families_from_device(vk::PhysicalDevice device, vk::SurfaceKHR surface);
     static bool is_device_suitable(vk::PhysicalDevice device, vk::SurfaceKHR surface);
+    
 
 #ifdef NDEBUG
     const bool enable_validation_layers = false;

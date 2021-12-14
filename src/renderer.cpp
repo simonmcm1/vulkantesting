@@ -1,5 +1,7 @@
 #include "renderer.h"
 #include "log.h"
+#include "geometry.h"
+
 #include <iostream>
 #include <set>
 
@@ -128,17 +130,38 @@ void Renderer::init_sync_objects() {
     }
 }
 
+void Renderer::init_vertex_buffers() {
+    vk::DeviceSize size = sizeof(Vertex) * QUAD.vertices.size();
+
+    vertex_buffer = std::make_unique<Buffer>(context);
+    vertex_buffer->init(size,
+                        vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+                        vk::MemoryPropertyFlagBits::eDeviceLocal);
+
+    Buffer staging = vertex_buffer->get_staging();
+    staging.store(QUAD.vertices.data());
+    staging.copy(command_pool, *vertex_buffer);
+
+    staging.close();
+}
+
+void Renderer::init_index_buffers() {
+    vk::DeviceSize size = sizeof(QUAD.indices[0]) * QUAD.indices.size();
+
+    index_buffer = std::make_unique<Buffer>(context);
+    index_buffer->init(size,
+                       vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+                       vk::MemoryPropertyFlagBits::eDeviceLocal);
+                       
+    Buffer staging = index_buffer->get_staging();
+    staging.store(QUAD.indices.data());
+    staging.copy(command_pool, *index_buffer);
+
+    staging.close();
+}
+
 void Renderer::init_command_buffers() {
     TRACE("initializing command buffers")
-
-    //if this is a rebuild then we may already have a command pool
-    if (command_pool == nullptr) {
-        vk::CommandPoolCreateInfo pool_create_info{};
-        pool_create_info.queueFamilyIndex = context.queue_families.graphics.value();
-        pool_create_info.flags = {};
-
-        command_pool = context.device.createCommandPool(pool_create_info);
-    }
 
     vk::CommandBufferAllocateInfo allocate_info{};
     allocate_info.commandPool = command_pool;
@@ -165,7 +188,12 @@ void Renderer::init_command_buffers() {
 
         command_buffers[i].beginRenderPass(renderpass_begin_info, vk::SubpassContents::eInline);
         command_buffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.pipeline);
-        command_buffers[i].draw(3, 1, 0, 0);
+
+        vk::Buffer vertex_buffers[] = {vertex_buffer->buffer};
+        vk::DeviceSize offsets[] = {0};
+        command_buffers[i].bindVertexBuffers(0, 1, vertex_buffers, offsets);
+        command_buffers[i].bindIndexBuffer(index_buffer->buffer, 0, vk::IndexType::eUint16);
+        command_buffers[i].drawIndexed(static_cast<uint32_t>(QUAD.indices.size()), 1, 0, 0, 0);
 
         command_buffers[i].endRenderPass();
         command_buffers[i].end();
@@ -252,6 +280,14 @@ void Renderer::render() {
     current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
+void Renderer::init_command_pool() {
+    vk::CommandPoolCreateInfo pool_create_info{};
+    pool_create_info.queueFamilyIndex = context.queue_families.graphics.value();
+    pool_create_info.flags = {};
+
+    command_pool = context.device.createCommandPool(pool_create_info);
+}
+
 void Renderer::init() {
     init_physical_device();
     init_logical_device();
@@ -259,6 +295,9 @@ void Renderer::init() {
     init_render_pass();
     pipeline.init(swapchain.extent, renderpass);
     init_framebuffers();
+    init_command_pool();
+    init_vertex_buffers();
+    init_index_buffers();
     init_command_buffers();
     init_sync_objects();
 }
@@ -279,6 +318,8 @@ void Renderer::close_swapchain() {
 
 void Renderer::close() {
     close_swapchain();
+    vertex_buffer->close();
+    index_buffer->close();
     context.device.destroyCommandPool(command_pool);
     context.instance.destroySurfaceKHR(context.surface);
     sync.clear();

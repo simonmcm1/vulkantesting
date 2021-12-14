@@ -77,6 +77,17 @@ QueueFamilies Context::get_queue_families_from_device(vk::PhysicalDevice device,
     return result;
 }
 
+uint32_t Context::find_memory_type(uint32_t type_filter, vk::MemoryPropertyFlags props) {
+    auto device_props = physical_device.getMemoryProperties();
+ 
+    for (uint32_t i = 0; i < device_props.memoryTypeCount; i++) {
+        if(type_filter & (1 << i) &&
+            (device_props.memoryTypes[i].propertyFlags & props) == props) {
+            return i;
+        }
+    }
+}
+
 void Context::init() {
 
     if(enable_validation_layers) {

@@ -5,6 +5,7 @@
 #include "pipeline.h"
 #include "semaphore.h"
 #include "fence.h"
+#include "buffer.h"
 
 #include <memory>
 
@@ -36,18 +37,23 @@ private:
     vk::RenderPass renderpass;
     Pipeline pipeline;
     std::vector<vk::Framebuffer> framebuffers;
-    VkCommandPool command_pool = nullptr;
+    vk::CommandPool command_pool = nullptr;
     std::vector<vk::CommandBuffer> command_buffers;
     std::vector<FrameSync> sync;
+    std::unique_ptr<Buffer> vertex_buffer;
+    std::unique_ptr<Buffer> index_buffer;
 
     size_t current_frame = 0;
 
     void init_sync_objects();
+    void init_command_pool();
     void init_command_buffers();
     void init_framebuffers();
     void init_render_pass();
     void init_physical_device();
     void init_logical_device();
+    void init_vertex_buffers();
+    void init_index_buffers();
 
     void rebuild_swapchain();
     void close_swapchain();

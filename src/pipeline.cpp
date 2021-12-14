@@ -1,5 +1,6 @@
 #include "pipeline.h"
 #include "log.h"
+#include "geometry.h"
 
 #include <fstream>
 #include <iostream>
@@ -49,11 +50,14 @@ void Pipeline::init(vk::Extent2D viewport_extent, vk::RenderPass renderpass) {
 
     vk::PipelineShaderStageCreateInfo stages[] = {vert_info, frag_info};
 
+    auto binding_description = Vertex::binding_description();
+    auto attributes_description = Vertex::attribute_description();
+
     vk::PipelineVertexInputStateCreateInfo input_info{};
-    input_info.vertexBindingDescriptionCount = 0;
-    input_info.pVertexBindingDescriptions = nullptr;
-    input_info.vertexAttributeDescriptionCount = 0;
-    input_info.pVertexAttributeDescriptions = nullptr;
+    input_info.vertexBindingDescriptionCount = 1;
+    input_info.pVertexBindingDescriptions = &binding_description;
+    input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributes_description.size());
+    input_info.pVertexAttributeDescriptions = attributes_description.data();
 
     vk::PipelineInputAssemblyStateCreateInfo assembly_info (
         {},
