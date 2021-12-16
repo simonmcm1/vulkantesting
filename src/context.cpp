@@ -12,7 +12,7 @@ void Context::init_validation_layers() {
     for (const auto& layer : validation_layers) {
         bool found = false;
         for(const auto& layer_props : available_layers) {
-            if (std::string(layer_props.layerName) == layer) {
+            if (strcmp(layer_props.layerName, layer) == 0) {
                 found = true;
                 break;
             }
@@ -38,7 +38,7 @@ bool Context::is_device_suitable(vk::PhysicalDevice device, vk::SurfaceKHR surfa
     for (const auto &required_ext : device_extensions) {
         bool found = false;
         for(const auto &ext : extensions) {
-            if(std::string(ext.extensionName) == required_ext) {
+            if(strcmp(ext.extensionName, required_ext)) {
                 found = true;
                 break;
             }
@@ -86,6 +86,7 @@ uint32_t Context::find_memory_type(uint32_t type_filter, vk::MemoryPropertyFlags
             return i;
         }
     }
+    throw std::runtime_error("requested memory type not found");
 }
 
 void Context::init() {

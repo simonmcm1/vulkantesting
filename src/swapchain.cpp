@@ -113,7 +113,7 @@ void Swapchain::init() {
 void Swapchain::init_image_views() {
     image_views.resize(images.size());
 
-    for (size_t i; i < images.size(); i++) {
+    for (size_t i = 0; i < images.size(); i++) {
         vk::ImageViewCreateInfo create_info{};
         create_info.image = images[i];
         create_info.viewType = vk::ImageViewType::e2D;

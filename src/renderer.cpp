@@ -326,19 +326,21 @@ void Renderer::render() {
     vk::Result present_result;
     try {
         present_result = context.presentation_queue.presentKHR(present_info);
+
+        if (present_result == vk::Result::eErrorOutOfDateKHR || present_result == vk::Result::eSuboptimalKHR || context.framebuffer_resized) {
+            context.framebuffer_resized = false;
+            rebuild_swapchain();
+        }
+        else if (present_result != vk::Result::eSuccess) {
+            throw std::runtime_error("failed to present swapchain image");
+        }
     }
     catch (vk::OutOfDateKHRError const &e) {
         //Out of date isn't defined as success in hpp wrapper so it throw an exception here :(
         context.framebuffer_resized = false;
         rebuild_swapchain();
     }
-
-    if(present_result == vk::Result::eErrorOutOfDateKHR || present_result == vk::Result::eSuboptimalKHR || context.framebuffer_resized) {
-        context.framebuffer_resized = false;
-        rebuild_swapchain();
-    } else if(present_result != vk::Result::eSuccess) {
-        throw std::runtime_error("failed to present swapchain image");
-    }
+  
     current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
@@ -352,7 +354,13 @@ void Renderer::init_command_pool() {
 
 void Renderer::rebuild_swapchain() {
     TRACE("rebuilding swapchain");
+    
+    //framebuffer is 0x0 when application is minimized
+    while (context.framebuffer_extent.width == 0 || context.framebuffer_extent.height == 0) {
+        glfwWaitEvents();
+    }
     context.device.waitIdle();
+
 
     close_swapchain();
 

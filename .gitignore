@@ -1,3 +1,6 @@
 .vscode/**/*
 VulkanTest
 shader/*.spv
+.vs
+thirdparty
+x64
