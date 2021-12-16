@@ -1,4 +1,5 @@
 #include "buffer.h"
+#include "log.h"
 
 void Buffer::init(vk::DeviceSize size, vk::BufferUsageFlags usage_flags, vk::MemoryPropertyFlags properties) {
 

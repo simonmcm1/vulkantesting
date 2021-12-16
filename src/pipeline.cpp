@@ -29,7 +29,7 @@ vk::ShaderModule Pipeline::load_shader(const std::vector<char> &bytes) {
     return shader;
 }
 
-void Pipeline::init(vk::Extent2D viewport_extent, vk::RenderPass renderpass) {
+void Pipeline::init(vk::Extent2D viewport_extent, vk::RenderPass renderpass, vk::DescriptorSetLayout descriptor_set_layout) {
     TRACE("initializing pipeline");
 
     auto vert_code = readFile("shader/vert.spv");
@@ -88,7 +88,7 @@ void Pipeline::init(vk::Extent2D viewport_extent, vk::RenderPass renderpass) {
         {},
         vk::PolygonMode::eFill,
         vk::CullModeFlagBits::eBack,
-        vk::FrontFace::eClockwise,
+        vk::FrontFace::eCounterClockwise,
         {},
         0.0f,
         0.0f,
@@ -138,8 +138,8 @@ void Pipeline::init(vk::Extent2D viewport_extent, vk::RenderPass renderpass) {
     */
 
     vk::PipelineLayoutCreateInfo layout_info{};
-    layout_info.setLayoutCount = 0;
-    layout_info.pSetLayouts = nullptr;
+    layout_info.setLayoutCount = 1;
+    layout_info.pSetLayouts = &descriptor_set_layout;
     layout_info.pushConstantRangeCount = 0;
     layout_info.pPushConstantRanges = nullptr;
 

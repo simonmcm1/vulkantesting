@@ -1,6 +1,7 @@
 #pragma once
 
 #include "context.h"
+#include "log.h"
 
 class Buffer {
 public:

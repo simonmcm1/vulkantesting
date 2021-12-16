@@ -4,6 +4,8 @@
 
 #include <iostream>
 #include <set>
+#include <glm/gtc/matrix_transform.hpp>
+#include <chrono>
 
 void Renderer::init_physical_device() {
     TRACE("initializing physical device")
@@ -131,6 +133,7 @@ void Renderer::init_sync_objects() {
 }
 
 void Renderer::init_vertex_buffers() {
+    //vertex buffer
     vk::DeviceSize size = sizeof(Vertex) * QUAD.vertices.size();
 
     vertex_buffer = std::make_unique<Buffer>(context);
@@ -138,26 +141,95 @@ void Renderer::init_vertex_buffers() {
                         vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
                         vk::MemoryPropertyFlagBits::eDeviceLocal);
 
-    Buffer staging = vertex_buffer->get_staging();
-    staging.store(QUAD.vertices.data());
-    staging.copy(command_pool, *vertex_buffer);
+    Buffer vstaging = vertex_buffer->get_staging();
+    vstaging.store(QUAD.vertices.data());
+    vstaging.copy(command_pool, *vertex_buffer);
+    vstaging.close();
 
-    staging.close();
-}
-
-void Renderer::init_index_buffers() {
-    vk::DeviceSize size = sizeof(QUAD.indices[0]) * QUAD.indices.size();
+    //index_buffer
+    size = sizeof(QUAD.indices[0]) * QUAD.indices.size();
 
     index_buffer = std::make_unique<Buffer>(context);
     index_buffer->init(size,
                        vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
                        vk::MemoryPropertyFlagBits::eDeviceLocal);
-                       
-    Buffer staging = index_buffer->get_staging();
-    staging.store(QUAD.indices.data());
-    staging.copy(command_pool, *index_buffer);
 
-    staging.close();
+    Buffer istaging = index_buffer->get_staging();
+    istaging.store(QUAD.indices.data());
+    istaging.copy(command_pool, *index_buffer);
+    istaging.close();
+
+}
+
+void Renderer::init_descriptor_set_layout() {
+    vk::DescriptorSetLayoutBinding ubo_layout(0,
+                                              vk::DescriptorType::eUniformBuffer,
+                                              1,
+                                              vk::ShaderStageFlagBits::eVertex,
+                                              nullptr);
+    vk::DescriptorSetLayoutCreateInfo create_info({}, 1, &ubo_layout);
+    descriptor_set_layout = context.device.createDescriptorSetLayout(create_info);
+}
+
+void Renderer::init_descriptor_pool() {
+    vk::DescriptorPoolSize pool_size(vk::DescriptorType::eUniformBuffer, static_cast<uint32_t> (swapchain.images.size()));
+
+    vk::DescriptorPoolCreateInfo create_info({},
+        static_cast<uint32_t>(swapchain.images.size()),
+        1,
+        &pool_size);
+    
+    descriptor_pool = context.device.createDescriptorPool(create_info);
+}
+
+void Renderer::init_descriptor_sets() {
+    std::vector<vk::DescriptorSetLayout> layouts(swapchain.images.size(), descriptor_set_layout);
+
+    vk::DescriptorSetAllocateInfo allocate_info(descriptor_pool,
+                                                static_cast<uint32_t>(layouts.size()),
+                                                layouts.data());
+
+    descriptor_sets = context.device.allocateDescriptorSets(allocate_info);
+
+    for (size_t i = 0; i < layouts.size(); i++) {
+        vk::DescriptorBufferInfo buffer_info(uniform_buffers[i].buffer, 0, sizeof(UniformBufferObject));
+        vk::WriteDescriptorSet write(descriptor_sets[i],
+                                     0,
+                                     0,
+                                     1,
+                                     vk::DescriptorType::eUniformBuffer,
+                                     nullptr,
+                                     &buffer_info,
+                                     nullptr);
+
+        context.device.updateDescriptorSets(1, &write, 0, nullptr);
+    }
+}
+
+void Renderer::init_uniform_buffers() {
+    vk::DeviceSize size = sizeof(UniformBufferObject);
+    for (size_t i = 0; i < swapchain.images.size(); i++)
+    {
+        uniform_buffers.push_back(Buffer(context));
+        uniform_buffers[i].init(size,
+                                vk::BufferUsageFlagBits::eUniformBuffer,
+                                vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
+    }
+}
+
+void Renderer::update_uniform_buffers(uint32_t current_image) {
+    static auto start_time = std::chrono::high_resolution_clock::now();
+
+    auto current_time = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
+
+    UniformBufferObject ubo{};
+    ubo.M = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.V = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.P = glm::perspective(glm::radians(45.0f), swapchain.extent.width / (float) swapchain.extent.height, 0.1f, 10.0f);
+    ubo.P[1][1] *= -1;
+
+    uniform_buffers[current_image].store(&ubo);
 }
 
 void Renderer::init_command_buffers() {
@@ -193,24 +265,12 @@ void Renderer::init_command_buffers() {
         vk::DeviceSize offsets[] = {0};
         command_buffers[i].bindVertexBuffers(0, 1, vertex_buffers, offsets);
         command_buffers[i].bindIndexBuffer(index_buffer->buffer, 0, vk::IndexType::eUint16);
+        command_buffers[i].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.layout, 0, 1, &descriptor_sets[i], 0, nullptr);
         command_buffers[i].drawIndexed(static_cast<uint32_t>(QUAD.indices.size()), 1, 0, 0, 0);
 
         command_buffers[i].endRenderPass();
         command_buffers[i].end();
     }
-}
-
-void Renderer::rebuild_swapchain() {
-    TRACE("rebuilding swapchain");
-    context.device.waitIdle();
-
-    close_swapchain();
-
-    swapchain.init();
-    init_render_pass();
-    pipeline.init(swapchain.extent, renderpass);
-    init_framebuffers();
-    init_command_buffers();
 }
 
 void Renderer::render() {
@@ -236,6 +296,8 @@ void Renderer::render() {
         context.device.waitForFences(1, &swapchain.image_fences[next_image], VK_TRUE, UINT64_MAX);
     }
     swapchain.image_fences[next_image] = sync[current_frame].in_flight_frame.fence;
+
+    update_uniform_buffers(next_image);
 
     vk::Semaphore wait_semaphores[] = {sync[current_frame].image_available.semaphore};
     vk::Semaphore signal_semaphores[] = {sync[current_frame].render_finished.semaphore};
@@ -288,16 +350,36 @@ void Renderer::init_command_pool() {
     command_pool = context.device.createCommandPool(pool_create_info);
 }
 
+void Renderer::rebuild_swapchain() {
+    TRACE("rebuilding swapchain");
+    context.device.waitIdle();
+
+    close_swapchain();
+
+    swapchain.init();
+    init_render_pass();
+    pipeline.init(swapchain.extent, renderpass, descriptor_set_layout);
+    init_framebuffers();
+    init_uniform_buffers();
+    init_descriptor_pool();
+    init_descriptor_sets();
+    init_command_buffers();
+}
+
+
 void Renderer::init() {
     init_physical_device();
     init_logical_device();
     swapchain.init();
     init_render_pass();
-    pipeline.init(swapchain.extent, renderpass);
+    init_descriptor_set_layout();
+    pipeline.init(swapchain.extent, renderpass, descriptor_set_layout);
     init_framebuffers();
     init_command_pool();
     init_vertex_buffers();
-    init_index_buffers();
+    init_uniform_buffers();
+    init_descriptor_pool();
+    init_descriptor_sets();
     init_command_buffers();
     init_sync_objects();
 }
@@ -310,6 +392,11 @@ void Renderer::close_swapchain() {
     for(auto framebuffer : framebuffers) {
         context.device.destroyFramebuffer(framebuffer);
     }
+    for(auto uniform_buffer: uniform_buffers) {
+        uniform_buffer.close();
+    }
+    uniform_buffers.clear();
+    context.device.destroyDescriptorPool(descriptor_pool);
     context.device.freeCommandBuffers(command_pool, command_buffers);
     pipeline.close();
     context.device.destroyRenderPass(renderpass);
@@ -318,6 +405,7 @@ void Renderer::close_swapchain() {
 
 void Renderer::close() {
     close_swapchain();
+    context.device.destroyDescriptorSetLayout(descriptor_set_layout);
     vertex_buffer->close();
     index_buffer->close();
     context.device.destroyCommandPool(command_pool);
