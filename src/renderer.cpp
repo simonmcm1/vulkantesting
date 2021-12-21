@@ -1,10 +1,11 @@
 #include "renderer.h"
 #include "log.h"
 #include "geometry.h"
+#include "object.h"
 
 #include <iostream>
 #include <set>
-#include <glm/gtc/matrix_transform.hpp>
+
 #include <chrono>
 
 void Renderer::init_physical_device() {
@@ -132,35 +133,6 @@ void Renderer::init_sync_objects() {
     }
 }
 
-void Renderer::init_vertex_buffers() {
-    //vertex buffer
-    vk::DeviceSize size = sizeof(Vertex) * QUAD.vertices.size();
-
-    vertex_buffer = std::make_unique<Buffer>(context);
-    vertex_buffer->init(size,
-                        vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
-                        vk::MemoryPropertyFlagBits::eDeviceLocal);
-
-    Buffer vstaging = vertex_buffer->get_staging();
-    vstaging.store(QUAD.vertices.data());
-    vstaging.copy(command_pool, *vertex_buffer);
-    vstaging.close();
-
-    //index_buffer
-    size = sizeof(QUAD.indices[0]) * QUAD.indices.size();
-
-    index_buffer = std::make_unique<Buffer>(context);
-    index_buffer->init(size,
-                       vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
-                       vk::MemoryPropertyFlagBits::eDeviceLocal);
-
-    Buffer istaging = index_buffer->get_staging();
-    istaging.store(QUAD.indices.data());
-    istaging.copy(command_pool, *index_buffer);
-    istaging.close();
-
-}
-
 void Renderer::init_descriptor_set_layout() {
     vk::DescriptorSetLayoutBinding ubo_layout(0,
                                               vk::DescriptorType::eUniformBuffer,
@@ -190,6 +162,7 @@ void Renderer::init_descriptor_sets() {
                                                 layouts.data());
 
     descriptor_sets = context.device.allocateDescriptorSets(allocate_info);
+    
 
     for (size_t i = 0; i < layouts.size(); i++) {
         vk::DescriptorBufferInfo buffer_info(uniform_buffers[i].buffer, 0, sizeof(UniformBufferObject));
@@ -217,63 +190,71 @@ void Renderer::init_uniform_buffers() {
     }
 }
 
-void Renderer::update_uniform_buffers(uint32_t current_image) {
-    static auto start_time = std::chrono::high_resolution_clock::now();
-
-    auto current_time = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
-
+void Renderer::update_uniform_buffers(uint32_t current_image, const std::vector<std::unique_ptr<Object>> &objects, Camera &camera) {
     UniformBufferObject ubo{};
-    ubo.M = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.V = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.P = glm::perspective(glm::radians(45.0f), swapchain.extent.width / (float) swapchain.extent.height, 0.1f, 10.0f);
-    ubo.P[1][1] *= -1;
-
+    for (size_t i = 0; i < objects.size(); i++) {
+        ubo.M[i] = objects[i]->transform.matrix();
+    }
+    ubo.V = camera.view();
+    ubo.P = camera.projection();
+   
     uniform_buffers[current_image].store(&ubo);
+}
+
+
+void Renderer::build_command_buffer(uint32_t image_index)
+{
+    vk::CommandBufferBeginInfo begin_info{};
+    begin_info.flags = {};
+    begin_info.pInheritanceInfo = nullptr;
+
+    auto& command_buffer = command_buffers.commands[image_index];
+
+    command_buffer.begin(begin_info);
+
+    vk::RenderPassBeginInfo renderpass_begin_info{};
+    renderpass_begin_info.framebuffer = framebuffers[image_index];
+    renderpass_begin_info.renderPass = renderpass;
+    renderpass_begin_info.renderArea.offset = vk::Offset2D{ 0,0 };
+    renderpass_begin_info.renderArea.extent = swapchain.extent;
+    vk::ClearValue clear_color(vk::ClearColorValue{ std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f} });
+    renderpass_begin_info.clearValueCount = 1;
+    renderpass_begin_info.pClearValues = &clear_color;
+
+    command_buffer.beginRenderPass(renderpass_begin_info, vk::SubpassContents::eInline);
+    command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.pipeline);
+    command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.layout, 0, 1, &descriptor_sets[image_index], 0, nullptr);
+
+    glm::uint32_t object_index = 0;
+    for (auto mesh_renderer : mesh_renderers) {
+        PushConstants push_constants{ object_index };
+        object_index++;
+        command_buffer.pushConstants(pipeline.layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(PushConstants), &push_constants);
+        mesh_renderer->command_buffer(command_buffer);
+    }
+
+    command_buffer.endRenderPass();
+    command_buffer.end();
 }
 
 void Renderer::init_command_buffers() {
     TRACE("initializing command buffers")
 
     vk::CommandBufferAllocateInfo allocate_info{};
-    allocate_info.commandPool = command_pool;
+    allocate_info.commandPool = context.command_pool;
     allocate_info.level = vk::CommandBufferLevel::ePrimary;
     allocate_info.commandBufferCount = (uint32_t)framebuffers.size();
 
-    command_buffers = context.device.allocateCommandBuffers(allocate_info);
+    command_buffers.commands = context.device.allocateCommandBuffers(allocate_info);
 
-    for(size_t i = 0; i < command_buffers.size(); i++) {
-        vk::CommandBufferBeginInfo begin_info{};
-        begin_info.flags = {};
-        begin_info.pInheritanceInfo = nullptr;
-
-        command_buffers[i].begin(begin_info);
-
-        vk::RenderPassBeginInfo renderpass_begin_info{};
-        renderpass_begin_info.framebuffer = framebuffers[i];
-        renderpass_begin_info.renderPass = renderpass;
-        renderpass_begin_info.renderArea.offset = vk::Offset2D{0,0};
-        renderpass_begin_info.renderArea.extent = swapchain.extent;
-        vk::ClearValue clear_color(vk::ClearColorValue{std::array<float, 4>{0.0f, 0.0f, 0.0f, 1.0f}});
-        renderpass_begin_info.clearValueCount = 1;
-        renderpass_begin_info.pClearValues = &clear_color;
-
-        command_buffers[i].beginRenderPass(renderpass_begin_info, vk::SubpassContents::eInline);
-        command_buffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.pipeline);
-
-        vk::Buffer vertex_buffers[] = {vertex_buffer->buffer};
-        vk::DeviceSize offsets[] = {0};
-        command_buffers[i].bindVertexBuffers(0, 1, vertex_buffers, offsets);
-        command_buffers[i].bindIndexBuffer(index_buffer->buffer, 0, vk::IndexType::eUint16);
-        command_buffers[i].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.layout, 0, 1, &descriptor_sets[i], 0, nullptr);
-        command_buffers[i].drawIndexed(static_cast<uint32_t>(QUAD.indices.size()), 1, 0, 0, 0);
-
-        command_buffers[i].endRenderPass();
-        command_buffers[i].end();
+    for(size_t i = 0; i < command_buffers.commands.size(); i++) {
+        build_command_buffer(i);
     }
+
+    command_buffers.needs_rebuild.resize(command_buffers.commands.size());
 }
 
-void Renderer::render() {
+void Renderer::render(Camera &camera, const std::vector<std::unique_ptr<Object>> &objects) {
     context.device.waitForFences(1, &sync[current_frame].in_flight_frame.fence, VK_TRUE, UINT64_MAX);
     auto next_image_res = context.device.acquireNextImageKHR(swapchain.swapchain, UINT64_MAX, sync[current_frame].image_available.semaphore, nullptr);
 
@@ -297,7 +278,20 @@ void Renderer::render() {
     }
     swapchain.image_fences[next_image] = sync[current_frame].in_flight_frame.fence;
 
-    update_uniform_buffers(next_image);
+    //rebuild command buffers if needed
+    if (command_buffers.needs_rebuild[next_image] == true) {
+        context.device.freeCommandBuffers(context.command_pool, command_buffers.commands[next_image]);
+        vk::CommandBufferAllocateInfo allocate_info{};
+        allocate_info.commandPool = context.command_pool;
+        allocate_info.level = vk::CommandBufferLevel::ePrimary;
+        allocate_info.commandBufferCount = 1;
+
+        command_buffers.commands[next_image] = context.device.allocateCommandBuffers(allocate_info)[0];
+        build_command_buffer(next_image);
+        command_buffers.needs_rebuild[next_image] = false;
+   }
+
+    update_uniform_buffers(next_image, objects, camera);
 
     vk::Semaphore wait_semaphores[] = {sync[current_frame].image_available.semaphore};
     vk::Semaphore signal_semaphores[] = {sync[current_frame].render_finished.semaphore};
@@ -307,7 +301,7 @@ void Renderer::render() {
     submit_info.pWaitSemaphores = wait_semaphores;
     submit_info.pWaitDstStageMask = wait_stages;
     submit_info.commandBufferCount = 1;
-    submit_info.pCommandBuffers = &command_buffers[next_image];
+    submit_info.pCommandBuffers = &command_buffers.commands[next_image];
     submit_info.signalSemaphoreCount = 1;
     submit_info.pSignalSemaphores = signal_semaphores;
 
@@ -336,7 +330,7 @@ void Renderer::render() {
         }
     }
     catch (vk::OutOfDateKHRError const &e) {
-        //Out of date isn't defined as success in hpp wrapper so it throw an exception here :(
+        //Out of date isn't defined as success in hpp wrapper so it throws an exception here :(
         context.framebuffer_resized = false;
         rebuild_swapchain();
     }
@@ -344,12 +338,18 @@ void Renderer::render() {
     current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
+void Renderer::register_mesh(MeshRenderer* mr)
+{
+    mesh_renderers.push_back(mr);
+    command_buffers.mark_dirty();
+}
+
 void Renderer::init_command_pool() {
     vk::CommandPoolCreateInfo pool_create_info{};
     pool_create_info.queueFamilyIndex = context.queue_families.graphics.value();
     pool_create_info.flags = {};
 
-    command_pool = context.device.createCommandPool(pool_create_info);
+    context.command_pool = context.device.createCommandPool(pool_create_info);
 }
 
 void Renderer::rebuild_swapchain() {
@@ -384,7 +384,6 @@ void Renderer::init() {
     pipeline.init(swapchain.extent, renderpass, descriptor_set_layout);
     init_framebuffers();
     init_command_pool();
-    init_vertex_buffers();
     init_uniform_buffers();
     init_descriptor_pool();
     init_descriptor_sets();
@@ -400,12 +399,12 @@ void Renderer::close_swapchain() {
     for(auto framebuffer : framebuffers) {
         context.device.destroyFramebuffer(framebuffer);
     }
-    for(auto uniform_buffer: uniform_buffers) {
+    for(auto &uniform_buffer: uniform_buffers) {
         uniform_buffer.close();
     }
     uniform_buffers.clear();
     context.device.destroyDescriptorPool(descriptor_pool);
-    context.device.freeCommandBuffers(command_pool, command_buffers);
+    command_buffers.close(context);
     pipeline.close();
     context.device.destroyRenderPass(renderpass);
     swapchain.close();
@@ -414,9 +413,8 @@ void Renderer::close_swapchain() {
 void Renderer::close() {
     close_swapchain();
     context.device.destroyDescriptorSetLayout(descriptor_set_layout);
-    vertex_buffer->close();
-    index_buffer->close();
-    context.device.destroyCommandPool(command_pool);
+
+    context.device.destroyCommandPool(context.command_pool);
     context.instance.destroySurfaceKHR(context.surface);
     sync.clear();
     context.device.destroy();

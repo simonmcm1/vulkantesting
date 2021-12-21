@@ -4,8 +4,22 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+
+
 #include <vector>
 #include <optional>
+
+struct UniformBufferObject {
+    alignas(16) glm::mat4 V;
+    alignas(16) glm::mat4 P;
+    alignas(16) glm::mat4 M[16];
+};
+
+struct PushConstants {
+    glm::uint32_t object_index;
+};
 
 struct QueueFamilies {
     std::optional<uint32_t> graphics;
@@ -49,6 +63,7 @@ public:
     vk::SurfaceKHR surface;
     vk::Extent2D framebuffer_extent;
     bool framebuffer_resized = false;
+    vk::CommandPool command_pool = nullptr;
 
     void init();
     void close();

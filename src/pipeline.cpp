@@ -137,11 +137,13 @@ void Pipeline::init(vk::Extent2D viewport_extent, vk::RenderPass renderpass, vk:
     dynamicState.pDynamicStates = dynamicStates;
     */
 
+    vk::PushConstantRange push_constant(vk::ShaderStageFlagBits::eVertex, 0, sizeof(PushConstants));
+
     vk::PipelineLayoutCreateInfo layout_info{};
     layout_info.setLayoutCount = 1;
     layout_info.pSetLayouts = &descriptor_set_layout;
-    layout_info.pushConstantRangeCount = 0;
-    layout_info.pPushConstantRanges = nullptr;
+    layout_info.pushConstantRangeCount = 1;
+    layout_info.pPushConstantRanges = &push_constant;
 
     layout = context.device.createPipelineLayout(layout_info);
 

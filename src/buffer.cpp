@@ -46,7 +46,7 @@ Buffer Buffer::get_staging() {
                 vk::BufferUsageFlagBits::eTransferSrc,
                 vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 
-    return staging;
+    return std::move(staging);
 }
 
 void Buffer::store(const void* src) {
@@ -56,6 +56,8 @@ void Buffer::store(const void* src) {
 }
 
 void Buffer::close() {
-    context.device.destroyBuffer(buffer);
-    context.device.freeMemory(memory);
+    if (buffer != vk::Buffer(nullptr)) {
+        context.device.destroyBuffer(buffer);
+        context.device.freeMemory(memory);
+    }    
 }

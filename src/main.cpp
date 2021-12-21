@@ -5,10 +5,14 @@
 #include <cstdlib>
 #include <memory>
 #include <vector>
+#include <glm/gtc/quaternion.hpp>
 
 #include "window.h"
 #include "context.h"
-#include "renderer.h"
+#include "engine.h"
+#include "geometry.h"
+
+
 
 class Application
 {
@@ -17,45 +21,61 @@ public:
 
 private:
     void init_window(int width, int height);
-    void init_vulkan();
     void main_loop();
+    void update();
     void close();
-
+    Engine engine;
     std::unique_ptr<Window> window;
-    std::unique_ptr<Renderer> renderer;
-    Context context;
+    MeshObject* plane;
+    float plane_rot = 0.0f;
+    MeshObject* plane2;
+    float plane2_rot = 0.0f;
 };
 
 void Application::run() {
+    plane = &engine.create_meshobject();
+    plane->mesh_renderer->load(QUAD);
+
+    plane2 = &engine.create_meshobject();
+    plane2->mesh_renderer->load(QUAD);
+    plane2->transform.position = glm::vec3(0, 0, 0.3);
+
     init_window(800, 600);
-    init_vulkan();
+    engine.init(*window);
+
+    engine.camera = std::make_unique<Camera>();
+    engine.camera->fov = glm::radians(45.0f);
+    engine.camera->aspect = window->width / (float)window->height;
+    engine.camera->near_clip = 0.1f;
+    engine.camera->far_clip = 10.0;
+    engine.camera->transform.position = glm::vec3(2.0f, 2.0f, 2.0f);
+    engine.camera->transform.rotation = glm::quatLookAt(glm::normalize(glm::vec3(0) - glm::vec3(2.0)), glm::vec3(0, 0, 1));
+
     main_loop();
     close();
 }
 
-void Application::init_vulkan() {
-    context.init();
-    window->create_surface();
-    renderer = std::make_unique<Renderer>(context);
-    renderer->init();
+void Application::update() {
+    plane_rot = plane_rot + glm::radians(90.0f) * engine.clock.delta_time;
+    plane->transform.set_rotation(glm::vec3(0, 0, plane_rot));
+    plane2_rot = plane2_rot - glm::radians(90.0f) * engine.clock.delta_time;
+    plane2->transform.set_rotation(glm::vec3(0, 0, plane2_rot));
 }
 
 void Application::init_window(int width, int height) {
-    window = std::make_unique<Window>(width, height, context);
+    window = std::make_unique<Window>(width, height, engine.get_context());
 }
 
 void Application::main_loop() {
     while (!window->should_close()) {
         window->poll_events();
-        renderer->render();
+        update();
+        engine.execute_frame();
     }
-    renderer->wait_for_idle();
+    engine.close();
 }
 
 void Application::close() {
-    renderer->close();
-    renderer.reset();
-    context.close();
     window.reset();
 }
 

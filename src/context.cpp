@@ -26,7 +26,7 @@ void Context::init_validation_layers() {
 bool Context::is_device_suitable(vk::PhysicalDevice device, vk::SurfaceKHR surface) {
     vk::PhysicalDeviceProperties props = device.getProperties();
     vk::PhysicalDeviceFeatures features = device.getFeatures();
-
+    TRACE("device: " << props.deviceName)
     QueueFamilies families = Context::get_queue_families_from_device(device, surface);
     if(!families.is_complete()) {
         return false;

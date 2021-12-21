@@ -1,16 +1,18 @@
 #pragma once
 
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
-
 #include "context.h"
 #include "swapchain.h"
 #include "pipeline.h"
 #include "semaphore.h"
 #include "fence.h"
 #include "buffer.h"
-
+#include "object.h"
+#include "mesh.h"
 #include <memory>
+
+class Camera;
+class MeshRenderer;
+class Object;
 
 struct FrameSync {
     Semaphore image_available;
@@ -23,10 +25,20 @@ struct FrameSync {
         in_flight_frame(Fence(context, true)){}
 };
 
-struct UniformBufferObject {
-    alignas(16) glm::mat4 M;
-    alignas(16) glm::mat4 V;
-    alignas(16) glm::mat4 P;
+struct CommandBufferSet {
+    //one for each image in the swapchain
+    std::vector<vk::CommandBuffer> commands;
+    std::vector<bool> needs_rebuild;
+
+    void close(Context& context) {
+        context.device.freeCommandBuffers(context.command_pool, commands);
+    }
+
+    void mark_dirty() {
+        for (size_t i = 0; i < needs_rebuild.size(); i++) {
+            needs_rebuild[i] = true;
+        }
+    }
 };
 
 class Renderer
@@ -35,11 +47,13 @@ public:
     const int MAX_FRAMES_IN_FLIGHT = 2;
 
     Renderer(Context &ctx) : context(ctx), swapchain(Swapchain(ctx)), pipeline(Pipeline(ctx)){};
-
+    
     void init();
     void close();
     void wait_for_idle();
-    void render();
+    void render(Camera &camera, const std::vector<std::unique_ptr<Object>> &objects);
+
+    void register_mesh(MeshRenderer* mr);
 
 private:
     Context &context;
@@ -48,14 +62,12 @@ private:
     Pipeline pipeline;
     vk::DescriptorSetLayout descriptor_set_layout;
     std::vector<vk::Framebuffer> framebuffers;
-    vk::CommandPool command_pool = nullptr;
     vk::DescriptorPool descriptor_pool;
     std::vector<vk::DescriptorSet> descriptor_sets;
-    std::vector<vk::CommandBuffer> command_buffers;
+    CommandBufferSet command_buffers;
     std::vector<FrameSync> sync;
-    std::unique_ptr<Buffer> vertex_buffer;
-    std::unique_ptr<Buffer> index_buffer;
     std::vector<Buffer> uniform_buffers;
+    std::vector<MeshRenderer*> mesh_renderers;
 
     size_t current_frame = 0;
 
@@ -67,12 +79,12 @@ private:
     void init_render_pass();
     void init_physical_device();
     void init_logical_device();
-    void init_vertex_buffers();
     void init_uniform_buffers();
     void init_descriptor_pool();
     void init_descriptor_sets();
+    void build_command_buffer(uint32_t image_index);
 
-    void update_uniform_buffers(uint32_t current_image);
+    void update_uniform_buffers(uint32_t current_image, const std::vector<std::unique_ptr<Object>> &objects, Camera& camera);
 
     void rebuild_swapchain();
     void close_swapchain();
