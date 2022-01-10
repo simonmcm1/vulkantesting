@@ -1,8 +1,10 @@
 CFLAGS = -std=c++17 -O2
 LDFLAGS = -lglfw -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi
+SOURCES=${wildcard src/*.cpp} 
+INCLUDES = -Ithirdparty/stb
 
 VulkanTest: src/*.cpp
-	g++ $(CFLAGS) -o VulkanTest src/main.cpp src/window.cpp src/context.cpp src/renderer.cpp src/swapchain.cpp src/pipeline.cpp src/geometry.cpp src/buffer.cpp $(LDFLAGS)
+	g++ $(CFLAGS) -o VulkanTest $(SOURCES) $(INCLUDES) $(LDFLAGS)
 
 .PHONY: test clean
 

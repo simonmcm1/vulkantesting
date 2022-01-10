@@ -11,14 +11,15 @@
 class Renderer;
 
 class Clock {
+    using clock = std::chrono::steady_clock;
 public:
 	void update();
 	float time = 0;
 	float delta_time = 0;
 
-	Clock() : last_frame(std::chrono::high_resolution_clock::now()) {};
+	Clock() : last_frame(clock::now()) {};
 private:
-	std::chrono::steady_clock::time_point last_frame;
+	clock::time_point last_frame;
 };
 
 class Engine

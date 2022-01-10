@@ -164,7 +164,7 @@ void Pipeline::init(vk::Extent2D viewport_extent, vk::RenderPass renderpass, vk:
     pipeline_info.basePipelineHandle = nullptr;
     pipeline_info.basePipelineIndex = -1;
 
-    pipeline = context.device.createGraphicsPipeline(nullptr, pipeline_info).value;
+    pipeline = context.device.createGraphicsPipeline(nullptr, pipeline_info);
 
     context.device.destroyShaderModule(vert);
     context.device.destroyShaderModule(frag);

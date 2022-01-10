@@ -3,7 +3,7 @@
 
 void Clock::update()
 {
-	auto now = std::chrono::high_resolution_clock::now();
+	auto now = clock::now();
 	time = std::chrono::duration_cast<std::chrono::duration<float>>(now.time_since_epoch()).count();
 	delta_time = std::chrono::duration_cast<std::chrono::duration<float>>(now - last_frame).count();
 	last_frame = now;
