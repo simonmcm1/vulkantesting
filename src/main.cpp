@@ -11,6 +11,7 @@
 #include "context.h"
 #include "engine.h"
 #include "geometry.h"
+#include "texture.h"
 
 
 
@@ -40,6 +41,8 @@ void Application::run() {
     plane2->mesh_renderer->load(QUAD);
     plane2->transform.position = glm::vec3(0, 0, 0.3);
 
+    engine.asset_manager.register_texture("smile", "assets/smile.png");
+
     init_window(800, 600);
     engine.init(*window);
 
@@ -52,6 +55,7 @@ void Application::run() {
     engine.camera->transform.rotation = glm::quatLookAt(glm::normalize(glm::vec3(0) - glm::vec3(2.0)), glm::vec3(0, 0, 1));
 
     main_loop();
+    
     close();
 }
 

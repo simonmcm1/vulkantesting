@@ -31,6 +31,7 @@ void Engine::close()
 	for (auto& object : objects) {
 		object->close();
 	}
+	asset_manager.close();
 	renderer.close();
 	context.close();
 }

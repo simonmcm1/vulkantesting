@@ -8,6 +8,8 @@
 #include "buffer.h"
 #include "object.h"
 #include "mesh.h"
+#include "asset_manager.h"
+
 #include <memory>
 
 class Camera;
@@ -46,9 +48,14 @@ class Renderer
 public:
     const int MAX_FRAMES_IN_FLIGHT = 2;
 
-    Renderer(Context &ctx) : context(ctx), swapchain(Swapchain(ctx)), pipeline(Pipeline(ctx)){};
+    Renderer(Context &ctx, AssetManager &assetmanager) : 
+        context(ctx), 
+        swapchain(Swapchain(ctx)), 
+        pipeline(Pipeline(ctx)),
+        asset_manager(assetmanager) {};
     
     void init();
+
     void close();
     void wait_for_idle();
     void render(Camera &camera, const std::vector<std::unique_ptr<Object>> &objects);
@@ -56,6 +63,8 @@ public:
     void register_mesh(MeshRenderer* mr);
 
 private:
+    AssetManager& asset_manager;
+
     Context &context;
     Swapchain swapchain;
     vk::RenderPass renderpass;

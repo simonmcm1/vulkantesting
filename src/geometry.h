@@ -7,6 +7,7 @@
 struct Vertex {
     glm::vec2 pos;
     glm::vec4 color;
+    glm::vec2 uv;
 
     static vk::VertexInputBindingDescription binding_description() {
         vk::VertexInputBindingDescription description(
@@ -14,8 +15,8 @@ struct Vertex {
         return description;
     }
 
-    static std::array<vk::VertexInputAttributeDescription, 2> attribute_description() {
-        std::array<vk::VertexInputAttributeDescription, 2> description{};
+    static std::array<vk::VertexInputAttributeDescription, 3> attribute_description() {
+        std::array<vk::VertexInputAttributeDescription, 3> description{};
         //pos
         description[0].binding = 0;
         description[0].location = 0;
@@ -28,6 +29,12 @@ struct Vertex {
         description[1].format = vk::Format::eR32G32B32A32Sfloat;
         description[1].offset = offsetof(Vertex, color);
 
+        //uv
+        description[2].binding = 0;
+        description[2].location = 2;
+        description[2].format = vk::Format::eR32G32Sfloat;
+        description[2].offset = offsetof(Vertex, uv);
+
         return description;
     }
 };
@@ -38,8 +45,8 @@ struct Mesh {
 };
 
 const Mesh QUAD = {
-    {{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f, 1.0f}},
-     {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f, 1.0f}},
-     {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f, 1.0f}},
-     {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f, 1.0f}}},
+    {{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
+     {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+     {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+     {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}},
     {0, 1, 2, 2, 3, 0}};

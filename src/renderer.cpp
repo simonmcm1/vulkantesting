@@ -47,6 +47,7 @@ void Renderer::init_logical_device() {
     }
 
     vk::PhysicalDeviceFeatures features{};
+    features.samplerAnisotropy = true;
 
     vk::DeviceCreateInfo create_info{};
     create_info.pQueueCreateInfos = queue_create_infos.data();
@@ -139,17 +140,25 @@ void Renderer::init_descriptor_set_layout() {
                                               1,
                                               vk::ShaderStageFlagBits::eVertex,
                                               nullptr);
-    vk::DescriptorSetLayoutCreateInfo create_info({}, 1, &ubo_layout);
+    vk::DescriptorSetLayoutBinding sampler_layout(1,
+        vk::DescriptorType::eCombinedImageSampler,
+        1,
+        vk::ShaderStageFlagBits::eFragment,
+        nullptr);
+    std::array<vk::DescriptorSetLayoutBinding, 2> bindings{ ubo_layout, sampler_layout };
+    vk::DescriptorSetLayoutCreateInfo create_info({}, static_cast<uint32_t>(bindings.size()), bindings.data());
     descriptor_set_layout = context.device.createDescriptorSetLayout(create_info);
 }
 
 void Renderer::init_descriptor_pool() {
-    vk::DescriptorPoolSize pool_size(vk::DescriptorType::eUniformBuffer, static_cast<uint32_t> (swapchain.images.size()));
-
+    std::array<vk::DescriptorPoolSize, 2> pool_sizes{
+        vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, static_cast<uint32_t> (swapchain.images.size())),
+        vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, static_cast<uint32_t> (swapchain.images.size()))
+    };
     vk::DescriptorPoolCreateInfo create_info({},
         static_cast<uint32_t>(swapchain.images.size()),
-        1,
-        &pool_size);
+        static_cast<uint32_t>(pool_sizes.size()),
+        pool_sizes.data());
     
     descriptor_pool = context.device.createDescriptorPool(create_info);
 }
@@ -163,19 +172,34 @@ void Renderer::init_descriptor_sets() {
 
     descriptor_sets = context.device.allocateDescriptorSets(allocate_info);
     
+    auto img = asset_manager.get_texture("smile");
 
     for (size_t i = 0; i < layouts.size(); i++) {
         vk::DescriptorBufferInfo buffer_info(uniform_buffers[i].buffer, 0, sizeof(UniformBufferObject));
-        vk::WriteDescriptorSet write(descriptor_sets[i],
+
+        vk::DescriptorImageInfo image_info(img->sampler, img->image_view, img->get_layout());
+        
+        std::array<vk::WriteDescriptorSet, 2> writes{
+                vk::WriteDescriptorSet(descriptor_sets[i],
                                      0,
                                      0,
                                      1,
                                      vk::DescriptorType::eUniformBuffer,
                                      nullptr,
                                      &buffer_info,
-                                     nullptr);
+                                     nullptr),
+                vk::WriteDescriptorSet(descriptor_sets[i],
+                                     1,
+                                     0,
+                                     1,
+                                     vk::DescriptorType::eCombinedImageSampler,
+                                     &image_info,
+                                     nullptr,
+                                     nullptr)
+        };
 
-        context.device.updateDescriptorSets(1, &write, 0, nullptr);
+
+        context.device.updateDescriptorSets(static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
     }
 }
 

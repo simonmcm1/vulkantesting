@@ -117,7 +117,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.2.198.1\Third-Party\Include;C:\VulkanSDK\1.2.198.1\Include;thirdparty\glfw-3.3.6.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.2.198.1\Third-Party\Include;C:\VulkanSDK\1.2.198.1\Include;thirdparty\glfw-3.3.6.bin.WIN64\include;thirdparty\stb;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ShowIncludes>false</ShowIncludes>
     </ClCompile>
@@ -145,6 +145,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\asset_manager.cpp" />
     <ClCompile Include="src\buffer.cpp" />
     <ClCompile Include="src\context.cpp" />
     <ClCompile Include="src\engine.cpp" />
@@ -155,9 +156,11 @@
     <ClCompile Include="src\pipeline.cpp" />
     <ClCompile Include="src\renderer.cpp" />
     <ClCompile Include="src\swapchain.cpp" />
+    <ClCompile Include="src\texture.cpp" />
     <ClCompile Include="src\window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\asset_manager.h" />
     <ClInclude Include="src\buffer.h" />
     <ClInclude Include="src\context.h" />
     <ClInclude Include="src\engine.h" />
@@ -171,6 +174,7 @@
     <ClInclude Include="src\renderer.h" />
     <ClInclude Include="src\semaphore.h" />
     <ClInclude Include="src\swapchain.h" />
+    <ClInclude Include="src\texture.h" />
     <ClInclude Include="src\window.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

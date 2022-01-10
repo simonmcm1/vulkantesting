@@ -21,23 +21,10 @@ void Buffer::init(vk::DeviceSize size, vk::BufferUsageFlags usage_flags, vk::Mem
 }
 
 void Buffer::copy(vk::CommandPool &command_pool, Buffer &dest) {
-    vk::CommandBufferAllocateInfo alloc_info(command_pool, vk::CommandBufferLevel::ePrimary, 1);
-    vk::CommandBuffer command_buffer = context.device.allocateCommandBuffers(alloc_info)[0];
-
-    vk::CommandBufferBeginInfo begin_info(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-    command_buffer.begin(begin_info);
+    auto command = OneTimeSubmitCommand::create(context);
     vk::BufferCopy copy_info(0, 0, size);
-    command_buffer.copyBuffer(buffer, dest.buffer, 1, &copy_info);
-    command_buffer.end();
-
-    vk::SubmitInfo submit_info;
-    submit_info.commandBufferCount = 1;
-    submit_info.pCommandBuffers = &command_buffer;
-
-    context.graphics_queue.submit(1, &submit_info, nullptr);
-    context.graphics_queue.waitIdle();
-
-    context.device.freeCommandBuffers(command_pool, 1, &command_buffer);
+    command.buffer.copyBuffer(buffer, dest.buffer, 1, &copy_info);
+    command.execute();
 }
 
 Buffer Buffer::get_staging() {

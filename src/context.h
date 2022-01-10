@@ -85,3 +85,14 @@ private:
     void init_validation_layers();
 };
 
+class OneTimeSubmitCommand {
+public:
+    vk::CommandBuffer buffer;
+
+    static OneTimeSubmitCommand create(Context& context);
+    void execute();
+private:
+    OneTimeSubmitCommand(Context& ctx) : context(ctx) {}
+    Context& context;
+};
+

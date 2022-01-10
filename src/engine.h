@@ -1,9 +1,11 @@
 #pragma once
 
 #include "context.h"
+#include "asset_manager.h"
 #include "renderer.h"
 #include "window.h"
 #include "object.h"
+#include "texture.h"
 
 #include <chrono>
 class Renderer;
@@ -29,10 +31,14 @@ public:
 	std::vector<std::unique_ptr<Object>> objects;
 	std::unique_ptr<Camera> camera;
 	Renderer renderer;
-	Engine() : renderer(context) {}
+	AssetManager asset_manager;
+	Engine() :
+		asset_manager(context), 
+		renderer(context, asset_manager) {}
 	Context& get_context();
 	Object& create_object();
 	MeshObject& create_meshobject();
+	Texture& create_texture(const std::string &filepath);
 
 	Clock clock;
 

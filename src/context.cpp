@@ -137,3 +137,29 @@ void Context::init() {
 void Context::close() {
     instance.destroy();
 }
+
+OneTimeSubmitCommand OneTimeSubmitCommand::create(Context& context)
+{
+    OneTimeSubmitCommand command(context);
+    vk::CommandBufferAllocateInfo alloc_info(context.command_pool, vk::CommandBufferLevel::ePrimary, 1);
+    command.buffer = context.device.allocateCommandBuffers(alloc_info)[0];
+
+    vk::CommandBufferBeginInfo begin_info(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+    command.buffer.begin(begin_info);
+
+    return command;
+}
+
+void OneTimeSubmitCommand::execute()
+{
+    buffer.end();
+
+    vk::SubmitInfo submit_info;
+    submit_info.commandBufferCount = 1;
+    submit_info.pCommandBuffers = &buffer;
+
+    context.graphics_queue.submit(1, &submit_info, nullptr);
+    context.graphics_queue.waitIdle();
+
+    context.device.freeCommandBuffers(context.command_pool, 1, &buffer);
+}
