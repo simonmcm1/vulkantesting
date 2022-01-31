@@ -34,14 +34,13 @@ private:
 };
 
 void Application::run() {
+    engine.asset_manager.load_assets();
     plane = &engine.create_meshobject();
     plane->mesh_renderer->load(QUAD);
 
     plane2 = &engine.create_meshobject();
     plane2->mesh_renderer->load(QUAD);
-    plane2->transform.position = glm::vec3(0, 0, 0.3);
-
-    engine.asset_manager.register_texture("smile", "assets/smile.png");
+    plane2->transform.position = glm::vec3(0, 0, -0.3);
 
     init_window(800, 600);
     engine.init(*window);

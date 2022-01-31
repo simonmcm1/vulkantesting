@@ -1,11 +1,13 @@
 #pragma once
 
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 #include <vector>
 
 struct Vertex {
-    glm::vec2 pos;
+    glm::vec3 pos;
     glm::vec4 color;
     glm::vec2 uv;
 
@@ -20,7 +22,7 @@ struct Vertex {
         //pos
         description[0].binding = 0;
         description[0].location = 0;
-        description[0].format = vk::Format::eR32G32Sfloat;
+        description[0].format = vk::Format::eR32G32B32Sfloat;
         description[0].offset = offsetof(Vertex, pos);
 
         //color
@@ -45,8 +47,8 @@ struct Mesh {
 };
 
 const Mesh QUAD = {
-    {{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
-     {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
-     {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-     {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}},
+    {{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
+     {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+     {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+     {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}},
     {0, 1, 2, 2, 3, 0}};

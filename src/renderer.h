@@ -77,10 +77,12 @@ private:
     std::vector<FrameSync> sync;
     std::vector<Buffer> uniform_buffers;
     std::vector<MeshRenderer*> mesh_renderers;
+    std::unique_ptr<Texture> depth_texture;
 
     size_t current_frame = 0;
 
     void init_sync_objects();
+    void init_depth();
     void init_command_pool();
     void init_command_buffers();
     void init_framebuffers();

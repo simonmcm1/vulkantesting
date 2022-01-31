@@ -137,6 +137,15 @@ void Pipeline::init(vk::Extent2D viewport_extent, vk::RenderPass renderpass, vk:
     dynamicState.pDynamicStates = dynamicStates;
     */
 
+    vk::PipelineDepthStencilStateCreateInfo depth_info{};
+    depth_info.depthTestEnable = VK_TRUE;
+    depth_info.depthWriteEnable = VK_TRUE;
+    depth_info.depthCompareOp = vk::CompareOp::eLess;
+    depth_info.depthBoundsTestEnable = VK_FALSE;
+    depth_info.maxDepthBounds = 1.0f;
+    depth_info.minDepthBounds = 0.0f;
+    depth_info.stencilTestEnable = VK_FALSE;
+   
     vk::PushConstantRange push_constant(vk::ShaderStageFlagBits::eVertex, 0, sizeof(PushConstants));
 
     vk::PipelineLayoutCreateInfo layout_info{};
@@ -155,7 +164,7 @@ void Pipeline::init(vk::Extent2D viewport_extent, vk::RenderPass renderpass, vk:
     pipeline_info.pViewportState = &viewport_info;
     pipeline_info.pRasterizationState = &rasterizer_info;
     pipeline_info.pMultisampleState = &multisampling_info;
-    pipeline_info.pDepthStencilState = nullptr;
+    pipeline_info.pDepthStencilState = &depth_info;
     pipeline_info.pColorBlendState = &color_blend_info;
     pipeline_info.pDynamicState = nullptr;
     pipeline_info.layout = layout;
@@ -164,8 +173,11 @@ void Pipeline::init(vk::Extent2D viewport_extent, vk::RenderPass renderpass, vk:
     pipeline_info.basePipelineHandle = nullptr;
     pipeline_info.basePipelineIndex = -1;
 
+#ifdef _WIN32
+    pipeline = context.device.createGraphicsPipeline(nullptr, pipeline_info).value;
+#else
     pipeline = context.device.createGraphicsPipeline(nullptr, pipeline_info);
-
+#endif
     context.device.destroyShaderModule(vert);
     context.device.destroyShaderModule(frag);
 }

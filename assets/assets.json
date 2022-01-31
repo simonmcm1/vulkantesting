@@ -1,0 +1,8 @@
+{
+  "textures": [
+    {
+      "name": "smile",
+      "path":  "assets/smile.png"
+    }
+  ]
+}
