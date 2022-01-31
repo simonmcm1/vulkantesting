@@ -174,7 +174,7 @@ void Renderer::init_depth()
     depth_texture->memory_flags = vk::MemoryPropertyFlagBits::eDeviceLocal;
 
     depth_texture->init();
-//    depth_texture->transition_layout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+    //depth_texture->transition_layout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
 }
 
 void Renderer::init_descriptor_set_layout() {
@@ -350,7 +350,7 @@ void Renderer::render(Camera &camera, const std::vector<std::unique_ptr<Object>>
 
     //rebuild command buffers if needed
     if (command_buffers.needs_rebuild[next_image] == true) {
-        command_buffers.commands[next_image].reset();
+        command_buffers.commands[next_image].reset({});
         build_command_buffer(next_image);
         command_buffers.needs_rebuild[next_image] = false;
    }
@@ -463,14 +463,14 @@ void Renderer::wait_for_idle() {
 }
 
 void Renderer::close_swapchain() {
+    depth_texture.reset();
+
     for(auto framebuffer : framebuffers) {
         context.device.destroyFramebuffer(framebuffer);
     }
     for(auto &uniform_buffer: uniform_buffers) {
         uniform_buffer.close();
     }
-
-    depth_texture->close();
 
     uniform_buffers.clear();
     context.device.destroyDescriptorPool(descriptor_pool);

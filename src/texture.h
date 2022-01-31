@@ -37,13 +37,15 @@ public:
 		context(ctx), 
 		uploaded(false), 
 		format(vk::Format::eUndefined),
-		aspect(vk::ImageAspectFlagBits::eColor) {}
+		aspect(vk::ImageAspectFlagBits::eColor),
+        layout(vk::ImageLayout::eUndefined),
+        pixels(nullptr) {}
 	
 	~Texture() {
 		close();
 	}
 	Texture(Texture& other) = delete;
-
+    
 	vk::ImageLayout get_layout() {
 		return layout;
 	}

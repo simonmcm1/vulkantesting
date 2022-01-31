@@ -25,9 +25,6 @@ std::unique_ptr<Texture> Texture::load_image(Context& context, const std::string
 	tex->usage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst;
 	tex->memory_flags = vk::MemoryPropertyFlagBits::eDeviceLocal;
 
-	tex->layout = vk::ImageLayout::eUndefined;
-
-
 	return tex;
 }
 
@@ -86,8 +83,9 @@ void Texture::init()
 	if (format == vk::Format::eUndefined) {
 		throw std::runtime_error("tried to init image with undefined format");
 	}
+    //std::cout << "creating image with layout " << layout << std::endl;
 
-	vk::Extent3D extent(width, height, 1);
+    vk::Extent3D extent(width, height, 1);
 
 	vk::ImageCreateInfo create_info({},
 		vk::ImageType::e2D,
