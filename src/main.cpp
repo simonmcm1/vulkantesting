@@ -46,8 +46,8 @@ void Application::run() {
     engine.init(*window);
 
     auto& material_manager = engine.renderer.get_material_mangager();
-    auto smile_mat = material_manager.get_instance<BasicMaterial>("basic");
-    smile_mat->albedo_texture = "smile";
+    auto smile_mat = material_manager.get_instance<ColoredMaterial>("colored");
+
     auto mat2 = material_manager.get_instance<BasicMaterial>("basic");
     mat2->albedo_texture = "smile2";
 

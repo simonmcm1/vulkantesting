@@ -3,16 +3,24 @@
 #include "context.h"
 #include "pipeline.h"
 #include "asset_manager.h"
+#include "buffer.h"
 
 class MaterialType {
 public:
+	std::string name;
 	Pipeline pipeline;
 	vk::DescriptorSetLayout descriptor_set_layout;
 
-	MaterialType(Context& ctx) : context(ctx), pipeline(ctx) {}
+	MaterialType(Context& ctx, std::string mat_name) : 
+		context(ctx),
+		pipeline(ctx, mat_name),
+		name(mat_name) {}
 
 	MaterialType(MaterialType& other) = delete;
-	MaterialType(MaterialType&& other): context(other.context), pipeline(other.pipeline) {
+	MaterialType(MaterialType&& other): 
+		context(other.context), 
+		pipeline(other.pipeline),
+		name(other.name) {
 		descriptor_set_layout = other.descriptor_set_layout;
 		other.descriptor_set_layout = nullptr;
 	}
@@ -33,7 +41,8 @@ public:
 	Material(Context& ctx, MaterialType& type) : 
 		context(ctx), 
 		material_type(type),
-		descriptor_set(nullptr) {}
+		descriptor_set(nullptr),
+		dirty(false) {}
 	Material(Material& other) = delete;
 
 	MaterialType& material_type;
@@ -44,9 +53,11 @@ public:
 	vk::DescriptorSet get_descriptor_set();
 	void remove_descriptor_set();
 	virtual void init_descriptor_set(vk::DescriptorPool& descriptor_pool, AssetManager& asset_manager) = 0;
+	
 protected:
 	Context& context;
 	vk::DescriptorSet descriptor_set;
+	bool dirty;
 };
 
 class BasicMaterial : public Material {
@@ -54,6 +65,22 @@ public:
 	BasicMaterial(Context& ctx, MaterialType& type) : Material(ctx, type) {}
 	std::string albedo_texture;
 	void init_descriptor_set(vk::DescriptorPool& descriptor_pool, AssetManager& asset_manager) override;
+};
+
+class ColoredMaterial : public Material {
+public:
+	ColoredMaterial(Context& ctx, MaterialType& type) : 
+		Material(ctx, type),
+		uniform_buffer(ctx),
+		uniforms({}) {}
+	//void set_color();
+	void init_descriptor_set(vk::DescriptorPool& descriptor_pool, AssetManager& asset_manager) override;
+private:
+	struct Uniforms {
+		alignas(16) glm::vec4 color;
+	};
+	Buffer uniform_buffer;
+	Uniforms uniforms;
 };
 
 class MaterialManager {

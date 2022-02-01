@@ -7,9 +7,9 @@
 
 std::vector<char> readFile(const std::string& filename) {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
+     
     if (!file.is_open()) {
-        throw std::runtime_error("failed to open file");
+        throw std::runtime_error("failed to open file " + filename);
     }
 
     size_t fileSize = (size_t) file.tellg();
@@ -32,8 +32,8 @@ vk::ShaderModule Pipeline::load_shader(const std::vector<char> &bytes) {
 void Pipeline::init(vk::Extent2D viewport_extent, vk::RenderPass renderpass, const std::vector<vk::DescriptorSetLayout>& descriptor_set_layouts) {
     TRACE("initializing pipeline");
 
-    auto vert_code = readFile("shader/vert.spv");
-    auto frag_code = readFile("shader/frag.spv");
+    auto vert_code = readFile("shader/" + prefix + "_vert.spv");
+    auto frag_code = readFile("shader/" + prefix + "_frag.spv");
 
     auto vert = load_shader(vert_code);
     auto frag = load_shader(frag_code);

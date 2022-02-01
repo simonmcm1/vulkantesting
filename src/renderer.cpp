@@ -298,6 +298,10 @@ void Renderer::build_command_buffer(uint32_t image_index)
             material->init_descriptor_set(descriptor_pool, asset_manager);
         }
 
+        if (material->get_descriptor_set() == vk::DescriptorSet(nullptr)) {
+            throw std::runtime_error("null descriptor set on " + material->material_type.name);
+        }
+
         std::array<vk::DescriptorSet, 2> descriptors{ descriptor_sets[image_index], material->get_descriptor_set() };
         command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.pipeline);
         command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.layout, 0, descriptors.size(), descriptors.data(), 0, nullptr);
