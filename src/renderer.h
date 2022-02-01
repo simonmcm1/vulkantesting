@@ -9,6 +9,7 @@
 #include "object.h"
 #include "mesh.h"
 #include "asset_manager.h"
+#include "material.h"
 
 #include <memory>
 
@@ -51,8 +52,9 @@ public:
     Renderer(Context &ctx, AssetManager &assetmanager) : 
         context(ctx), 
         swapchain(Swapchain(ctx)), 
-        pipeline(Pipeline(ctx)),
-        asset_manager(assetmanager) {};
+//        pipeline(Pipeline(ctx)),
+        asset_manager(assetmanager),
+        material_manager(ctx) {};
     
     void init();
 
@@ -61,14 +63,18 @@ public:
     void render(Camera &camera, const std::vector<std::unique_ptr<Object>> &objects);
 
     void register_mesh(MeshRenderer* mr);
+    MaterialManager& get_material_mangager() {
+        return material_manager;
+    }
 
 private:
     AssetManager& asset_manager;
+    MaterialManager material_manager;
 
     Context &context;
     Swapchain swapchain;
     vk::RenderPass renderpass;
-    Pipeline pipeline;
+//    Pipeline pipeline;
     vk::DescriptorSetLayout descriptor_set_layout;
     std::vector<vk::Framebuffer> framebuffers;
     vk::DescriptorPool descriptor_pool;
@@ -78,6 +84,7 @@ private:
     std::vector<Buffer> uniform_buffers;
     std::vector<MeshRenderer*> mesh_renderers;
     std::unique_ptr<Texture> depth_texture;
+    
 
     size_t current_frame = 0;
 
@@ -87,6 +94,7 @@ private:
     void init_command_buffers();
     void init_framebuffers();
     void init_descriptor_set_layout();
+    void init_materials();
     void init_render_pass();
     void init_physical_device();
     void init_logical_device();

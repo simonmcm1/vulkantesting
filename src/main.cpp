@@ -45,6 +45,15 @@ void Application::run() {
     init_window(800, 600);
     engine.init(*window);
 
+    auto& material_manager = engine.renderer.get_material_mangager();
+    auto smile_mat = material_manager.get_instance<BasicMaterial>("basic");
+    smile_mat->albedo_texture = "smile";
+    auto mat2 = material_manager.get_instance<BasicMaterial>("basic");
+    mat2->albedo_texture = "smile2";
+
+    plane->mesh_renderer->material = smile_mat.get();
+    plane2->mesh_renderer->material = mat2.get();
+
     engine.camera = std::make_unique<Camera>();
     engine.camera->fov = glm::radians(45.0f);
     engine.camera->aspect = window->width / (float)window->height;

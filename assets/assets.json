@@ -2,7 +2,11 @@
   "textures": [
     {
       "name": "smile",
-      "path":  "assets/smile.png"
+      "path": "assets/smile.png"
+    },
+    {
+      "name": "smile2",
+      "path": "assets/smmile.png"
     }
   ]
 }

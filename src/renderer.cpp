@@ -177,52 +177,53 @@ void Renderer::init_depth()
     //depth_texture->transition_layout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
 }
 
+void Renderer::init_materials() {
+    material_manager.init();
+
+    for (auto& material_type : material_manager.material_types) {
+        material_type.second.init(swapchain.extent, renderpass, descriptor_set_layout);
+    }
+}
+
+void Renderer::init_descriptor_pool() {
+    uint32_t max_descriptors = static_cast<uint32_t> (swapchain.images.size() * 30);
+    std::array<vk::DescriptorPoolSize, 2> pool_sizes{
+        vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, max_descriptors),
+vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, max_descriptors)
+    };
+    vk::DescriptorPoolCreateInfo create_info({},
+        max_descriptors,
+        static_cast<uint32_t>(pool_sizes.size()),
+        pool_sizes.data());
+
+    descriptor_pool = context.device.createDescriptorPool(create_info);
+}
+
 void Renderer::init_descriptor_set_layout() {
     vk::DescriptorSetLayoutBinding ubo_layout(0,
-                                              vk::DescriptorType::eUniformBuffer,
-                                              1,
-                                              vk::ShaderStageFlagBits::eVertex,
-                                              nullptr);
-    vk::DescriptorSetLayoutBinding sampler_layout(1,
-        vk::DescriptorType::eCombinedImageSampler,
+        vk::DescriptorType::eUniformBuffer,
         1,
-        vk::ShaderStageFlagBits::eFragment,
+        vk::ShaderStageFlagBits::eVertex,
         nullptr);
-    std::array<vk::DescriptorSetLayoutBinding, 2> bindings{ ubo_layout, sampler_layout };
+    std::array<vk::DescriptorSetLayoutBinding, 1> bindings{ ubo_layout };
     vk::DescriptorSetLayoutCreateInfo create_info({}, static_cast<uint32_t>(bindings.size()), bindings.data());
     descriptor_set_layout = context.device.createDescriptorSetLayout(create_info);
 }
 
-void Renderer::init_descriptor_pool() {
-    std::array<vk::DescriptorPoolSize, 2> pool_sizes{
-        vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, static_cast<uint32_t> (swapchain.images.size())),
-        vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, static_cast<uint32_t> (swapchain.images.size()))
-    };
-    vk::DescriptorPoolCreateInfo create_info({},
-        static_cast<uint32_t>(swapchain.images.size()),
-        static_cast<uint32_t>(pool_sizes.size()),
-        pool_sizes.data());
-    
-    descriptor_pool = context.device.createDescriptorPool(create_info);
-}
-
 void Renderer::init_descriptor_sets() {
+    std::cout << "init global descriptor set" << std::endl;
     std::vector<vk::DescriptorSetLayout> layouts(swapchain.images.size(), descriptor_set_layout);
 
     vk::DescriptorSetAllocateInfo allocate_info(descriptor_pool,
-                                                static_cast<uint32_t>(layouts.size()),
-                                                layouts.data());
+        static_cast<uint32_t>(layouts.size()),
+        layouts.data());
 
     descriptor_sets = context.device.allocateDescriptorSets(allocate_info);
-    
-    auto img = asset_manager.get_texture("smile");
 
     for (size_t i = 0; i < layouts.size(); i++) {
         vk::DescriptorBufferInfo buffer_info(uniform_buffers[i].buffer, 0, sizeof(UniformBufferObject));
 
-        vk::DescriptorImageInfo image_info(img->sampler, img->image_view, img->get_layout());
-        
-        std::array<vk::WriteDescriptorSet, 2> writes{
+        std::array<vk::WriteDescriptorSet, 1> writes{
                 vk::WriteDescriptorSet(descriptor_sets[i],
                                      0,
                                      0,
@@ -230,14 +231,6 @@ void Renderer::init_descriptor_sets() {
                                      vk::DescriptorType::eUniformBuffer,
                                      nullptr,
                                      &buffer_info,
-                                     nullptr),
-                vk::WriteDescriptorSet(descriptor_sets[i],
-                                     1,
-                                     0,
-                                     1,
-                                     vk::DescriptorType::eCombinedImageSampler,
-                                     &image_info,
-                                     nullptr,
                                      nullptr)
         };
 
@@ -252,19 +245,19 @@ void Renderer::init_uniform_buffers() {
     {
         uniform_buffers.push_back(Buffer(context));
         uniform_buffers[i].init(size,
-                                vk::BufferUsageFlagBits::eUniformBuffer,
-                                vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
+            vk::BufferUsageFlagBits::eUniformBuffer,
+            vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
     }
 }
 
-void Renderer::update_uniform_buffers(uint32_t current_image, const std::vector<std::unique_ptr<Object>> &objects, Camera &camera) {
+void Renderer::update_uniform_buffers(uint32_t current_image, const std::vector<std::unique_ptr<Object>>& objects, Camera& camera) {
     UniformBufferObject ubo{};
     for (size_t i = 0; i < objects.size(); i++) {
         ubo.M[i] = objects[i]->transform.matrix();
     }
     ubo.V = camera.view();
     ubo.P = camera.projection();
-   
+
     uniform_buffers[current_image].store(&ubo);
 }
 
@@ -292,11 +285,23 @@ void Renderer::build_command_buffer(uint32_t image_index)
     renderpass_begin_info.pClearValues = clear_colors.data();
 
     command_buffer.beginRenderPass(renderpass_begin_info, vk::SubpassContents::eInline);
-    command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.pipeline);
-    command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.layout, 0, 1, &descriptor_sets[image_index], 0, nullptr);
 
     glm::uint32_t object_index = 0;
     for (auto mesh_renderer : mesh_renderers) {
+
+        auto material = mesh_renderer->material;
+        const auto& pipeline = material->get_pipeline();
+
+        //build material descriptor sets if they weren't already
+        //TODO: initialize explicitly somehwere?
+        if (material->get_descriptor_set() == vk::DescriptorSet(nullptr)) {
+            material->init_descriptor_set(descriptor_pool, asset_manager);
+        }
+
+        std::array<vk::DescriptorSet, 2> descriptors{ descriptor_sets[image_index], material->get_descriptor_set() };
+        command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.pipeline);
+        command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.layout, 0, descriptors.size(), descriptors.data(), 0, nullptr);
+
         PushConstants push_constants{ object_index };
         object_index++;
         command_buffer.pushConstants(pipeline.layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(PushConstants), &push_constants);
@@ -431,12 +436,25 @@ void Renderer::rebuild_swapchain() {
     swapchain.init();
     init_depth();
     init_render_pass();
-    pipeline.init(swapchain.extent, renderpass, descriptor_set_layout);
+
+    for (auto& material_type : material_manager.material_types) {
+        material_type.second.rebuild_pipeline(swapchain.extent, renderpass, descriptor_set_layout);
+    }
+
     init_framebuffers();
     init_uniform_buffers();
     init_descriptor_pool();
     init_descriptor_sets();
+
+    //must rebuild all the material descriptor sets, too
+    //TODO: what about materials that aren't attached to a MeshRenderer?
+    for (auto& renderer : mesh_renderers) {
+        renderer->material->init_descriptor_set(descriptor_pool, asset_manager);
+    }
+
     init_command_buffers();
+
+
 }
 
 
@@ -447,7 +465,7 @@ void Renderer::init() {
     init_depth();
     init_render_pass();
     init_descriptor_set_layout();
-    pipeline.init(swapchain.extent, renderpass, descriptor_set_layout);
+    init_materials();
 
     init_framebuffers();
     init_command_pool();
@@ -475,7 +493,9 @@ void Renderer::close_swapchain() {
     uniform_buffers.clear();
     context.device.destroyDescriptorPool(descriptor_pool);
     command_buffers.close(context);
-    pipeline.close();
+
+    material_manager.close_pipelines();
+
     context.device.destroyRenderPass(renderpass);
     swapchain.close();
 }
@@ -483,6 +503,7 @@ void Renderer::close_swapchain() {
 void Renderer::close() {
     close_swapchain();
     context.device.destroyDescriptorSetLayout(descriptor_set_layout);
+    material_manager.close_layouts();
 
     context.device.destroyCommandPool(context.command_pool);
     context.instance.destroySurfaceKHR(context.surface);

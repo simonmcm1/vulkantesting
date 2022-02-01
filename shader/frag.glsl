@@ -1,6 +1,6 @@
 #version 450
 
-layout(binding = 1) uniform sampler2D mainTex;
+layout(set = 1, binding = 0) uniform sampler2D mainTex;
 
 layout(location = 0) out vec4 outColor;
 layout(location = 0) in vec4 vertexColor;

@@ -29,7 +29,7 @@ vk::ShaderModule Pipeline::load_shader(const std::vector<char> &bytes) {
     return shader;
 }
 
-void Pipeline::init(vk::Extent2D viewport_extent, vk::RenderPass renderpass, vk::DescriptorSetLayout descriptor_set_layout) {
+void Pipeline::init(vk::Extent2D viewport_extent, vk::RenderPass renderpass, const std::vector<vk::DescriptorSetLayout>& descriptor_set_layouts) {
     TRACE("initializing pipeline");
 
     auto vert_code = readFile("shader/vert.spv");
@@ -149,8 +149,8 @@ void Pipeline::init(vk::Extent2D viewport_extent, vk::RenderPass renderpass, vk:
     vk::PushConstantRange push_constant(vk::ShaderStageFlagBits::eVertex, 0, sizeof(PushConstants));
 
     vk::PipelineLayoutCreateInfo layout_info{};
-    layout_info.setLayoutCount = 1;
-    layout_info.pSetLayouts = &descriptor_set_layout;
+    layout_info.setLayoutCount = descriptor_set_layouts.size();
+    layout_info.pSetLayouts = descriptor_set_layouts.data();
     layout_info.pushConstantRangeCount = 1;
     layout_info.pPushConstantRanges = &push_constant;
 
