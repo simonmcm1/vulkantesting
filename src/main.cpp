@@ -31,6 +31,8 @@ private:
     float plane_rot = 0.0f;
     MeshObject* plane2;
     float plane2_rot = 0.0f;
+    ColoredMaterial *colored_mat;
+    glm::vec4 color{0.0f, 0.0f, 1.0f, 1.0f};
 };
 
 void Application::run() {
@@ -46,12 +48,15 @@ void Application::run() {
     engine.init(*window);
 
     auto& material_manager = engine.renderer.get_material_mangager();
-    auto smile_mat = material_manager.get_instance<ColoredMaterial>("colored");
+    auto cmat = material_manager.get_instance<ColoredMaterial>("colored");
+    colored_mat = cmat.get();
+    colored_mat->set_color(glm::vec4(1.0, 0.0, 0.0, 1.0));
 
     auto mat2 = material_manager.get_instance<BasicMaterial>("basic");
-    mat2->albedo_texture = "smile2";
+    mat2->albedo_texture = "smile";
 
-    plane->mesh_renderer->material = smile_mat.get();
+    plane->mesh_renderer->material = colored_mat;
+
     plane2->mesh_renderer->material = mat2.get();
 
     engine.camera = std::make_unique<Camera>();
@@ -72,6 +77,11 @@ void Application::update() {
     plane->transform.set_rotation(glm::vec3(0, 0, plane_rot));
     plane2_rot = plane2_rot - glm::radians(90.0f) * engine.clock.delta_time;
     plane2->transform.set_rotation(glm::vec3(0, 0, plane2_rot));
+
+    if(color.r <= 1.0f) {
+        color.r = color.r + engine.clock.delta_time * 0.1f;
+    }
+    colored_mat->set_color(color);
 }
 
 void Application::init_window(int width, int height) {

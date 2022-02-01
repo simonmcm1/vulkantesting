@@ -119,13 +119,8 @@ void ColoredMaterial::init_descriptor_set(vk::DescriptorPool& descriptor_pool, A
     vk::DescriptorSetAllocateInfo allocate_info(descriptor_pool, 1, &material_type.descriptor_set_layout);
     descriptor_set = context.device.allocateDescriptorSets(allocate_info).at(0);
 
-    vk::DeviceSize size = sizeof(Uniforms);
-    uniform_buffer.init(size,
-        vk::BufferUsageFlagBits::eUniformBuffer,
-        vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
-
     //TODO: use dynamic here
-    vk::DescriptorBufferInfo buffer_info(uniform_buffer.buffer, 0, size);
+    vk::DescriptorBufferInfo buffer_info(uniform_buffer.buffer, 0, sizeof(Uniforms));
 
     std::array<vk::WriteDescriptorSet, 1> writes{
         vk::WriteDescriptorSet(descriptor_set,
@@ -137,10 +132,28 @@ void ColoredMaterial::init_descriptor_set(vk::DescriptorPool& descriptor_pool, A
                              &buffer_info,
                              nullptr)
     };
-    Uniforms data{};
-    data.color = { 1.0f, 0.0f, 0.0f, 1.0f };
-    uniform_buffer.store(&data);
+
     context.device.updateDescriptorSets(static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
+}
 
+void ColoredMaterial::update_if_dirty() {
+    if(dirty) {
+        uniform_buffer.store(&uniforms);
+        dirty = false;
+    }
+}
 
+void ColoredMaterial::set_color(glm::vec4 color) {
+    uniforms.color = color;
+    dirty = true;
+}
+
+void ColoredMaterial::init() {
+    uniform_buffer.init(sizeof(Uniforms),
+                        vk::BufferUsageFlagBits::eUniformBuffer,
+                        vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
+}
+
+void ColoredMaterial::close() {
+    uniform_buffer.close();
 }

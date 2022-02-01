@@ -16,7 +16,7 @@ public:
 		pipeline(ctx, mat_name),
 		name(mat_name) {}
 
-	MaterialType(MaterialType& other) = delete;
+	MaterialType(const MaterialType& other) = delete;
 	MaterialType(MaterialType&& other): 
 		context(other.context), 
 		pipeline(other.pipeline),
@@ -52,8 +52,13 @@ public:
 
 	vk::DescriptorSet get_descriptor_set();
 	void remove_descriptor_set();
-	virtual void init_descriptor_set(vk::DescriptorPool& descriptor_pool, AssetManager& asset_manager) = 0;
-	
+
+    virtual void init(){};
+    virtual void close() {};
+    virtual void update_if_dirty() {};
+    
+    virtual void init_descriptor_set(vk::DescriptorPool &descriptor_pool, AssetManager &asset_manager) = 0;
+
 protected:
 	Context& context;
 	vk::DescriptorSet descriptor_set;
@@ -73,10 +78,14 @@ public:
 		Material(ctx, type),
 		uniform_buffer(ctx),
 		uniforms({}) {}
-	//void set_color();
-	void init_descriptor_set(vk::DescriptorPool& descriptor_pool, AssetManager& asset_manager) override;
+	void update_if_dirty() override;
+    void init() override;
+    void close() override;
+    void init_descriptor_set(vk::DescriptorPool &descriptor_pool, AssetManager &asset_manager) override;
+    void set_color(glm::vec4 color);
+
 private:
-	struct Uniforms {
+    struct Uniforms {
 		alignas(16) glm::vec4 color;
 	};
 	Buffer uniform_buffer;
@@ -89,10 +98,12 @@ public:
 	std::unordered_map<std::string, MaterialType> material_types;
 	template<class T> std::unique_ptr<T> get_instance(const std::string& type) {
 		auto& mt = material_types.at(type);
-		return std::make_unique<T>(context, mt);
-	}
+		auto res = std::make_unique<T>(context, mt);
+        res->init();
+        return res;
+    }
 
-	void init();
+    void init();
 	void close_layouts();
 	void close_pipelines();
 

@@ -357,6 +357,12 @@ void Renderer::render(Camera &camera, const std::vector<std::unique_ptr<Object>>
     }
     swapchain.image_fences[next_image] = sync[current_frame].in_flight_frame.fence;
 
+
+    //update dirty materials
+    for(auto &renderer : mesh_renderers) {
+        renderer->material->update_if_dirty();
+    }
+
     //rebuild command buffers if needed
     if (command_buffers.needs_rebuild[next_image] == true) {
         command_buffers.commands[next_image].reset({});
@@ -365,6 +371,7 @@ void Renderer::render(Camera &camera, const std::vector<std::unique_ptr<Object>>
    }
 
     update_uniform_buffers(next_image, objects, camera);
+
 
     vk::Semaphore wait_semaphores[] = {sync[current_frame].image_available.semaphore};
     vk::Semaphore signal_semaphores[] = {sync[current_frame].render_finished.semaphore};
@@ -508,6 +515,9 @@ void Renderer::close() {
     close_swapchain();
     context.device.destroyDescriptorSetLayout(descriptor_set_layout);
     material_manager.close_layouts();
+    for (auto &m : mesh_renderers) {
+        m->material->close();
+    }
 
     context.device.destroyCommandPool(context.command_pool);
     context.instance.destroySurfaceKHR(context.surface);
