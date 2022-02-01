@@ -114,4 +114,7 @@
   <ItemGroup>
     <None Include="assets\assets.json" />
   </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="vcpkg\installed\x64-windows\bin\glfw3.dll" />
+  </ItemGroup>
 </Project>
