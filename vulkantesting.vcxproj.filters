@@ -57,6 +57,9 @@
     <ClCompile Include="src\material.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\model.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\buffer.h">
@@ -110,11 +113,20 @@
     <ClInclude Include="src\material.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\model.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\assets.json" />
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="vcpkg\installed\x64-windows\bin\glfw3.dll" />
+    <CopyFileToFolders Include="vcpkg\installed\x64-windows\bin\assimp-vc142-mt.dll" />
+    <CopyFileToFolders Include="vcpkg\installed\x64-windows\bin\Irrlicht.dll" />
+    <CopyFileToFolders Include="vcpkg\installed\x64-windows\bin\zlib1.dll" />
+    <CopyFileToFolders Include="vcpkg\installed\x64-windows\bin\libpng16.dll" />
+    <CopyFileToFolders Include="vcpkg\installed\x64-windows\bin\jpeg62.dll" />
+    <CopyFileToFolders Include="vcpkg\installed\x64-windows\bin\bz2.dll" />
   </ItemGroup>
 </Project>

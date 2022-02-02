@@ -47,6 +47,6 @@ void MeshRenderer::command_buffer(vk::CommandBuffer& command_buffer)
     vk::Buffer vertex_buffers[] = { vertex_buffer.buffer };
     vk::DeviceSize offsets[] = { 0 };
     command_buffer.bindVertexBuffers(0, 1, vertex_buffers, offsets);
-    command_buffer.bindIndexBuffer(index_buffer.buffer, 0, vk::IndexType::eUint16);
+    command_buffer.bindIndexBuffer(index_buffer.buffer, 0, vk::IndexType::eUint32);
     command_buffer.drawIndexed(static_cast<uint32_t>(mesh->indices.size()), 1, 0, 0, 0);
 }

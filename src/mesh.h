@@ -4,6 +4,7 @@
 #include "material.h"
 
 class Renderer;
+class Material;
 
 class MeshRenderer {
 public:

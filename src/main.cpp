@@ -37,35 +37,39 @@ private:
 
 void Application::run() {
     engine.asset_manager.load_assets();
+    auto hydrant = engine.asset_manager.get_model("fire-hydrant");
     plane = &engine.create_meshobject();
-    plane->mesh_renderer->load(QUAD);
+    plane->mesh_renderer->load(hydrant->meshes.at("Aset_street__S_uiuhbegfa_LOD0"));
+    plane->transform.scale = glm::vec3(0.05, 0.05, 0.05);
+    plane->transform.set_rotation(glm::vec3(glm::radians(90.0), 0, 0));
+    plane->transform.position = glm::vec3(0, 0, -1.0f);
 
-    plane2 = &engine.create_meshobject();
-    plane2->mesh_renderer->load(QUAD);
-    plane2->transform.position = glm::vec3(0, 0, -0.3);
+    //plane2 = &engine.create_meshobject();
+    //plane2->mesh_renderer->load(QUAD);
+    //plane2->transform.position = glm::vec3(0, 0, -0.3);
 
     init_window(800, 600);
     engine.init(*window);
 
     auto& material_manager = engine.renderer.get_material_mangager();
-    auto cmat = material_manager.get_instance<ColoredMaterial>("colored");
-    colored_mat = cmat.get();
-    colored_mat->set_color(glm::vec4(1.0, 0.0, 0.0, 1.0));
+    auto cmat = material_manager.get_instance<BasicMaterial>("basic");
+    auto fmat = cmat.get();
+    fmat->albedo_texture = "fire-hydrant-albedo";
 
-    auto mat2 = material_manager.get_instance<BasicMaterial>("basic");
-    mat2->albedo_texture = "smile";
+    //auto mat2 = material_manager.get_instance<BasicMaterial>("basic");
+    //mat2->albedo_texture = "smile";
 
-    plane->mesh_renderer->material = colored_mat;
+    plane->mesh_renderer->material = fmat;
 
-    plane2->mesh_renderer->material = mat2.get();
+    //plane2->mesh_renderer->material = mat2.get();
 
     engine.camera = std::make_unique<Camera>();
     engine.camera->fov = glm::radians(45.0f);
     engine.camera->aspect = window->width / (float)window->height;
     engine.camera->near_clip = 0.1f;
     engine.camera->far_clip = 10.0;
-    engine.camera->transform.position = glm::vec3(2.0f, 2.0f, 2.0f);
-    engine.camera->transform.rotation = glm::quatLookAt(glm::normalize(glm::vec3(0) - glm::vec3(2.0)), glm::vec3(0, 0, 1));
+    engine.camera->transform.position = glm::vec3(4.0f, 4.0f, 4.0f);
+    engine.camera->transform.rotation = glm::quatLookAt(glm::normalize(glm::vec3(0) - glm::vec3(5.0)), glm::vec3(0, 0, 1));
 
     main_loop();
     
@@ -74,14 +78,14 @@ void Application::run() {
 
 void Application::update() {
     plane_rot = plane_rot + glm::radians(90.0f) * engine.clock.delta_time;
-    plane->transform.set_rotation(glm::vec3(0, 0, plane_rot));
-    plane2_rot = plane2_rot - glm::radians(90.0f) * engine.clock.delta_time;
-    plane2->transform.set_rotation(glm::vec3(0, 0, plane2_rot));
+    plane->transform.set_rotation(glm::vec3(glm::radians(90.0), 0, plane_rot));
+    //plane2_rot = plane2_rot - glm::radians(90.0f) * engine.clock.delta_time;
+    //plane2->transform.set_rotation(glm::vec3(0, 0, plane2_rot));
 
-    if(color.r <= 1.0f) {
-        color.r = color.r + engine.clock.delta_time * 0.1f;
-    }
-    colored_mat->set_color(color);
+    //if(color.r <= 1.0f) {
+    //    color.r = color.r + engine.clock.delta_time * 0.1f;
+    //}
+    //colored_mat->set_color(color);
 }
 
 void Application::init_window(int width, int height) {

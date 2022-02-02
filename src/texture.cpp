@@ -14,11 +14,13 @@ std::unique_ptr<Texture> Texture::load_image(Context& context, const std::string
 		throw std::runtime_error("failed to load image at " + path);
 	}
 
+	std::cout << "loaded " << path << ", " << w << "x" << h << " " << channels << " chanels" << std::endl;
+
 	std::unique_ptr<Texture> tex = std::make_unique<Texture>(context);
 	tex->pixels = image;
 	tex->width = w;
 	tex->height = h;
-	tex->channels = channels;
+	tex->channels = 4;
 	tex->format = vk::Format::eR8G8B8A8Srgb;
 	tex->aspect = vk::ImageAspectFlagBits::eColor;
 	tex->tiling = vk::ImageTiling::eOptimal;

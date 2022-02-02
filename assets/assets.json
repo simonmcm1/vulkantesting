@@ -5,8 +5,18 @@
       "path": "assets/smile.png"
     },
     {
-      "name": "smile2",
-      "path": "assets/smile.png"
+      "name": "fire-hydrant-albedo",
+      "path": "assets/hydrant/uiuhbegfa_4K_Albedo.jpg"
     }
+  ],
+  "models": [
+	{
+		"name": "fire-hydrant",
+		"path": "assets/hydrant/uiuhbegfa_LOD0.fbx"
+	},
+	{
+		"name": "cube",
+		"path": "assets/fbx/cube.obj"
+	}
   ]
 }
