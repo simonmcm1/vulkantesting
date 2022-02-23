@@ -2,7 +2,7 @@
 #include "lighting.glsl"
 
 layout(set = 1, binding = 0) uniform UniformBufferObject {
-    vec4 color;
+    float roughness;
 } ubo;
 layout(set = 1, binding = 1) uniform sampler2D albedoTex;
 layout(set = 1, binding = 2) uniform sampler2D normalTex;
@@ -15,6 +15,12 @@ layout(location = 2) in vec3 vertex_normal;
 layout(location = 3) in vec3 world_position;
 layout(location = 4) in mat3 TBN;
 
+//takes in normal in tangent space and return world space normalized
+vec3 decode_normal(vec4 tex) {
+	vec3 norm = tex.xyz * 2.0 - 1.0;
+	return -normalize(TBN * norm);
+}
+
 void main() {
 //    outColor = vec4(vertexColor.xyz, 1.0);
 //    outColor = vec4(uv, 0.0, 1.0);
@@ -24,11 +30,11 @@ void main() {
 	vec3 lightPos = vec3(3.0, -3.0, 3.0);
 	vec3 camera_pos = vec3(4.0, 4.0, 4.0);
 	
-	vec3 albedo = ubo.color.xyz;
-	vec3 normal = normalize(vertex_normal);
+	vec3 albedo = texture(albedoTex, uv).xyz;
+	vec3 normal = decode_normal(texture(normalTex, uv));
 
-	//vec4 pbr = texture(prbMapTex, uv);
-	float roughness = 0.5;
+	vec4 pbr = texture(prbMapTex, uv);
+	float roughness = 0.5;//pbr.x;
 
 	LightingData light_data;
 	light_data.light_pos = lightPos;
@@ -36,7 +42,7 @@ void main() {
 	light_data.world_pos = world_position;
 	light_data.cam_pos = camera_pos;
 	light_data.roughness = roughness;
-	light_data.metallic = 0.5;
+	light_data.metallic = 0.0;
 	light_data.albedo = albedo;
 	light_data.normal = normal;
 	

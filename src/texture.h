@@ -5,11 +5,17 @@
 
 #include <stb_image.h>
 
+enum ColorSpace {
+	SRGB,
+	LINEAR
+};
+
 class Texture {
 public:
 	uint32_t width;
 	uint32_t height;
 	uint32_t channels;
+	uint32_t mip_levels;
 	vk::Image image;
 	vk::DeviceMemory image_memory;
 	vk::ImageView image_view;
@@ -22,7 +28,7 @@ public:
 
 	bool uploaded;
 
-	static std::unique_ptr<Texture> load_image(Context &context, const std::string& path);
+	static std::unique_ptr<Texture> load_image(Context &context, const std::string& path, ColorSpace color_space);
 	static vk::Format get_supported_format(Context& context,
 		const std::vector<vk::Format>& candidates,
 		vk::ImageTiling tiling,
@@ -30,7 +36,7 @@ public:
 	static bool has_stencil(vk::Format format);
 	void init();
 	void copy_from_buffer(Buffer& buffer);
-	void upload();
+	void upload(bool generate_mipmaps);
 	void transition_layout(vk::ImageLayout layout);
 
 	Texture(Context& ctx) : 
@@ -57,4 +63,6 @@ private:
 	stbi_uc* pixels;
 	
 	vk::ImageLayout layout;
+
+	void create_mipmaps();
 };

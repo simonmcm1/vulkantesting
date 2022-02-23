@@ -37,10 +37,15 @@ private:
 
 void Application::run() {
     engine.asset_manager.load_assets();
-    auto hydrant = engine.asset_manager.get_model("fire-hydrant");
     plane = &engine.create_meshobject();
-    plane->mesh_renderer->load(hydrant->meshes.at("Aset_street__S_uiuhbegfa_LOD0"));
-    plane->transform.scale = glm::vec3(0.05, 0.05, 0.05);
+
+    //auto hydrant = engine.asset_manager.get_model("fire-hydrant");
+    auto hydrant = engine.asset_manager.get_model("sphere");
+    //plane->mesh_renderer->load(hydrant->meshes.at("Aset_street__S_uiuhbegfa_LOD0"));
+    plane->mesh_renderer->load(hydrant->meshes.at("defaultobject"));
+    //auto hydrant = engine.asset_manager.get_model("cube");
+    //plane->mesh_renderer->load(hydrant->meshes.at("defaultobject"));
+    //plane->transform.scale = glm::vec3(0.05, 0.05, 0.05);
     plane->transform.set_rotation(glm::vec3(glm::radians(90.0), 0, 0));
     plane->transform.position = glm::vec3(0, 0, -1.0f);
 
@@ -52,9 +57,18 @@ void Application::run() {
     engine.init(*window);
 
     auto& material_manager = engine.renderer.get_material_mangager();
-    auto cmat = material_manager.get_instance<BasicMaterial>("basic");
+    //auto cmat = material_manager.get_instance<BasicMaterial>("basic");
+    //auto fmat = cmat.get();
+    //fmat->albedo_texture = "fire-hydrant-albedo";
+    /*auto cmat = material_manager.get_instance<StandardMaterial>("standard");
     auto fmat = cmat.get();
     fmat->albedo_texture = "fire-hydrant-albedo";
+    fmat->normal_map = "fire-hydrant-normal";
+    fmat->pbr_map = "fire-hydrant-pbr";
+    */
+    auto cmat = material_manager.get_instance<ColoredMaterial>("colored");
+    auto fmat = cmat.get();
+    fmat->set_color(glm::vec4(0.81, 0.0, 0.0, 1.0));
 
     //auto mat2 = material_manager.get_instance<BasicMaterial>("basic");
     //mat2->albedo_texture = "smile";

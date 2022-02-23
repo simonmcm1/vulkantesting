@@ -92,6 +92,29 @@ private:
 	Uniforms uniforms;
 };
 
+class StandardMaterial : public Material {
+public:
+	StandardMaterial(Context& ctx, MaterialType& type) :
+		Material(ctx, type),
+		uniform_buffer(ctx),
+		uniforms({}) {}
+
+	std::string albedo_texture;
+	std::string normal_map;
+	std::string pbr_map;
+
+	void update_if_dirty() override;
+	void init() override;
+	void close() override;
+	void init_descriptor_set(vk::DescriptorPool& descriptor_pool, AssetManager& asset_manager) override;
+private:
+	struct Uniforms {
+		alignas(4) float roughness;
+	};
+	Buffer uniform_buffer;
+	Uniforms uniforms;
+};
+
 class MaterialManager {
 public:
 	MaterialManager(Context& ctx) : context(ctx) {}

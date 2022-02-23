@@ -15,7 +15,7 @@ void AssetManager::load_assets()
 	AssetsList assets_list = assets_json.get<AssetsList>();
 	std::cout << "loading textures" << std::endl;
 	for (auto &tex : assets_list.textures) {
-		tex.texture = Texture::load_image(context, tex.path);
+		tex.texture = Texture::load_image(context, tex.path, tex.color_space);
 		textures[tex.name] = std::move(tex);
 	}
 	std::cout << "loaded " << textures.size() << " texture assets" << std::endl;
@@ -29,12 +29,13 @@ void AssetManager::load_assets()
 	std::cout << "loaded " << models.size() << " model assets" << std::endl;
 }
 
-void AssetManager::register_texture(const std::string &name, const std::string& path)
+void AssetManager::register_texture(const std::string &name, const std::string& path, ColorSpace color_space)
 {
 	auto asset = TextureAsset{
 		name,
 		path,
-		Texture::load_image(context, path)
+		color_space,
+		Texture::load_image(context, path, color_space)
 	};
 	textures[name] = std::move(asset);
 }
@@ -48,7 +49,7 @@ Texture* AssetManager::get_texture(const std::string& name)
 	auto res = textures[name].texture.get();
 	if (!res->uploaded) {
 		res->init();
-		res->upload();
+		res->upload(true);
 	}
 
 	return res;

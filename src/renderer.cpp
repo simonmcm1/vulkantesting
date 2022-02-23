@@ -172,6 +172,7 @@ void Renderer::init_depth()
     depth_texture->tiling = vk::ImageTiling::eOptimal;
     depth_texture->usage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
     depth_texture->memory_flags = vk::MemoryPropertyFlagBits::eDeviceLocal;
+    depth_texture->mip_levels = 1;
 
     depth_texture->init();
     //depth_texture->transition_layout(vk::ImageLayout::eDepthStencilAttachmentOptimal);

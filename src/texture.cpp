@@ -6,7 +6,7 @@
 
 #include <vulkan/vulkan.hpp>
 
-std::unique_ptr<Texture> Texture::load_image(Context& context, const std::string& path)
+std::unique_ptr<Texture> Texture::load_image(Context& context, const std::string& path, ColorSpace color_space)
 {
 	int w, h, channels;
 	auto image = stbi_load(path.c_str(), &w, &h, &channels, STBI_rgb_alpha);
@@ -21,11 +21,19 @@ std::unique_ptr<Texture> Texture::load_image(Context& context, const std::string
 	tex->width = w;
 	tex->height = h;
 	tex->channels = 4;
-	tex->format = vk::Format::eR8G8B8A8Srgb;
+	if (color_space == SRGB) {
+		tex->format = vk::Format::eR8G8B8A8Srgb;
+	}
+	else if (color_space == LINEAR) {
+		tex->format = vk::Format::eR8G8B8A8Snorm;
+	}
+	
 	tex->aspect = vk::ImageAspectFlagBits::eColor;
 	tex->tiling = vk::ImageTiling::eOptimal;
-	tex->usage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst;
+	tex->usage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc;
 	tex->memory_flags = vk::MemoryPropertyFlagBits::eDeviceLocal;
+
+	tex->mip_levels = static_cast<uint32_t>(std::floor(std::log2(std::max(tex->width, tex->height)))) + 1;
 
 	return tex;
 }
@@ -85,7 +93,6 @@ void Texture::init()
 	if (format == vk::Format::eUndefined) {
 		throw std::runtime_error("tried to init image with undefined format");
 	}
-    //std::cout << "creating image with layout " << layout << std::endl;
 
     vk::Extent3D extent(width, height, 1);
 
@@ -93,7 +100,7 @@ void Texture::init()
 		vk::ImageType::e2D,
 		format,
 		extent,
-		1,
+		mip_levels,
 		1,
 		vk::SampleCountFlagBits::e1,
 		tiling,
@@ -118,13 +125,13 @@ void Texture::init()
 		vk::ImageViewType::e2D,
 		format,
 		vk::ComponentMapping{},
-		vk::ImageSubresourceRange{ aspect, 0, 1, 0, 1 });
+		vk::ImageSubresourceRange{ aspect, 0, mip_levels, 0, 1 });
 
 	image_view = context.device.createImageView(view_info);
 
 }
 
-void Texture::upload()
+void Texture::upload(bool generate_mipmaps)
 {
 
 	Buffer staging(context);
@@ -135,8 +142,16 @@ void Texture::upload()
 
 	transition_layout(vk::ImageLayout::eTransferDstOptimal);
 	copy_from_buffer(staging);
-	transition_layout(vk::ImageLayout::eShaderReadOnlyOptimal);
+
 	staging.close();
+
+	if (generate_mipmaps) {
+		//create_mipmaps also transitions layout to ShaderReadOnlyOptimal
+		create_mipmaps();
+	} else {
+		transition_layout(vk::ImageLayout::eShaderReadOnlyOptimal);
+	}
+	
 
 	//sampler
 	vk::SamplerCreateInfo sampler_info({},
@@ -152,7 +167,7 @@ void Texture::upload()
 		false,
 		vk::CompareOp::eAlways,
 		0.0f,
-		0.0f,
+		static_cast<float>(mip_levels),
 		vk::BorderColor::eIntOpaqueBlack,
 		false);
 
@@ -184,7 +199,104 @@ void Texture::close()
 		context.device.freeMemory(image_memory);
 		image_memory = nullptr;
 	}
+}
 
+void Texture::create_mipmaps()
+{
+	auto command = OneTimeSubmitCommand::create(context);
+
+	vk::ImageSubresourceRange subresource_range(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+	vk::ImageMemoryBarrier barrier(
+		vk::AccessFlagBits::eTransferWrite,
+		vk::AccessFlagBits::eTransferRead,
+		vk::ImageLayout::eTransferDstOptimal,
+		vk::ImageLayout::eTransferSrcOptimal,
+		VK_QUEUE_FAMILY_IGNORED,
+		VK_QUEUE_FAMILY_IGNORED,
+		image,
+		subresource_range
+	);
+
+	int32_t mip_width = width;
+	int32_t mip_height = height;
+
+	for (uint32_t i = 1; i < mip_levels; i++) {
+		uint32_t next_mip_width = mip_width > 1 ? mip_width / 2 : 1;
+		uint32_t next_mip_height = mip_height > 1 ? mip_height / 2 : 1;
+
+		//we are going to read from the level below, transfer that level from dst to src
+		//this level is already a dest
+		barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+		barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
+		barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal,
+		barrier.newLayout = vk::ImageLayout::eTransferSrcOptimal,
+		barrier.subresourceRange.baseMipLevel = i - 1;
+
+		command.buffer.pipelineBarrier(
+			vk::PipelineStageFlagBits::eTransfer,
+			vk::PipelineStageFlagBits::eTransfer,
+			{},
+			0, nullptr,
+			0, nullptr,
+			1, &barrier);
+
+		std::array<vk::Offset3D, 2> src_offset = {
+			vk::Offset3D{0,0,0},
+			vk::Offset3D{mip_width, mip_height, 1}
+		};
+		std::array<vk::Offset3D, 2> dest_offset = {
+			vk::Offset3D{0,0,0},
+			vk::Offset3D{static_cast<int32_t>(next_mip_width), static_cast<int32_t>(next_mip_height), 1}
+		};
+		vk::ImageBlit blit(
+			vk::ImageSubresourceLayers{ vk::ImageAspectFlagBits::eColor, i - 1, 0, 1 },
+			src_offset,
+			vk::ImageSubresourceLayers{ vk::ImageAspectFlagBits::eColor, i, 0, 1 },
+			dest_offset
+		);
+		command.buffer.blitImage(
+			image, vk::ImageLayout::eTransferSrcOptimal,
+			image, vk::ImageLayout::eTransferDstOptimal,
+			1, &blit,
+			vk::Filter::eLinear
+		);
+
+		//transfer the level below us to the final desired layout
+		barrier.oldLayout = vk::ImageLayout::eTransferSrcOptimal;
+		barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		barrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
+		barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+		barrier.subresourceRange.baseMipLevel = i - 1;
+
+		command.buffer.pipelineBarrier(
+			vk::PipelineStageFlagBits::eTransfer,
+			vk::PipelineStageFlagBits::eFragmentShader,
+			{},
+			0, nullptr,
+			0, nullptr,
+			1, &barrier);
+
+		mip_width = next_mip_width;
+		mip_height = next_mip_height;
+	}
+
+	//transfer the final level that didn't get done in the loop
+	barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
+	barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+	barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+	barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+	barrier.subresourceRange.baseMipLevel = mip_levels - 1;
+
+	command.buffer.pipelineBarrier(
+		vk::PipelineStageFlagBits::eTransfer,
+		vk::PipelineStageFlagBits::eFragmentShader,
+		{},
+		0, nullptr,
+		0, nullptr,
+		1, &barrier);
+
+	command.execute();
+	layout = vk::ImageLayout::eShaderReadOnlyOptimal;
 }
 
 void Texture::transition_layout(vk::ImageLayout new_layout)
@@ -196,7 +308,7 @@ void Texture::transition_layout(vk::ImageLayout new_layout)
 	vk::PipelineStageFlags src_stage;
 	vk::PipelineStageFlags dest_stage;
 
-	vk::ImageSubresourceRange subresource_range(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+	vk::ImageSubresourceRange subresource_range(vk::ImageAspectFlagBits::eColor, 0, mip_levels, 0, 1);
 
 	if (layout == vk::ImageLayout::eUndefined && new_layout == vk::ImageLayout::eTransferDstOptimal) {
 		src_access_mask = {};

@@ -11,6 +11,7 @@ class Model;
 struct TextureAsset {
 	std::string name;
 	std::string path;
+	ColorSpace color_space;
 	std::unique_ptr<Texture> texture;
 };
 
@@ -29,7 +30,7 @@ class AssetManager {
 public:
 	AssetManager(Context& ctx) : context(ctx) {}
 	void load_assets();
-	void register_texture(const std::string &name, const std::string& path);
+	void register_texture(const std::string &name, const std::string& path, ColorSpace color_space);
 	Texture* get_texture(const std::string& name);
 	Model* get_model(const std::string& name);
 	void close();
@@ -40,6 +41,11 @@ private:
 	std::unordered_map<std::string, ModelAsset> models;
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(TextureAsset, name, path)
+NLOHMANN_JSON_SERIALIZE_ENUM(ColorSpace, {
+	{LINEAR, "linear"},
+	{SRGB, "srgb"}
+})
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(TextureAsset, name, path, color_space)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ModelAsset, name, path)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AssetsList, textures, models)

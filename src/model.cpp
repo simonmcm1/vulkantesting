@@ -13,7 +13,7 @@ std::unique_ptr<Model> Model::load_fbx(Context &context, const std::string& path
 	auto model = std::make_unique<Model>();
 
 	Assimp::Importer import;
-	const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals);
+	const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals | aiProcess_CalcTangentSpace);
 
 	if (!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 	{
@@ -53,10 +53,29 @@ std::unique_ptr<Model> Model::load_fbx(Context &context, const std::string& path
 						amesh->mTextureCoords[0][i].y
 					};
 				};
+				glm::vec3 normal{};
+				if (amesh->HasNormals()) {
+					normal = {
+						amesh->mNormals[i].x,
+						amesh->mNormals[i].y,
+						amesh->mNormals[i].z
+					};
+				}
+				glm::vec3 tangent{};
+				if (amesh->HasTangentsAndBitangents()) {
+					tangent = {
+						amesh->mTangents[i].x,
+						amesh->mTangents[i].y,
+						amesh->mTangents[i].z
+					};
+				}
+
 				Vertex v{
 					pos,
 					color,
-					uv
+					uv,
+					normal,
+					tangent
 				};
 				mesh.vertices.push_back(v);
 			}
@@ -65,7 +84,7 @@ std::unique_ptr<Model> Model::load_fbx(Context &context, const std::string& path
 				if (amesh->mFaces[f].mNumIndices != 3) {
 					throw std::runtime_error("tried to import non-triangle mesh");
 				}
-				//amesh->mFaces[i].mIndices
+
 				mesh.indices.push_back(static_cast<uint32_t>(amesh->mFaces[f].mIndices[0]));
 				mesh.indices.push_back(static_cast<uint32_t>(amesh->mFaces[f].mIndices[1]));
 				mesh.indices.push_back(static_cast<uint32_t>(amesh->mFaces[f].mIndices[2]));

@@ -2,11 +2,23 @@
   "textures": [
     {
       "name": "smile",
-      "path": "assets/smile.png"
+      "path": "assets/smile.png",
+      "color_space": "srgb"
     },
     {
       "name": "fire-hydrant-albedo",
-      "path": "assets/hydrant/uiuhbegfa_4K_Albedo.jpg"
+      "path": "assets/hydrant/uiuhbegfa_4K_Albedo.jpg",
+      "color_space":  "srgb"
+    },
+    {
+      "name": "fire-hydrant-normal",
+      "path": "assets/hydrant/uiuhbegfa_4K_Normal_LOD0.jpg",
+      "color_space": "linear"
+    },
+    {
+      "name": "fire-hydrant-pbr",
+      "path": "assets/hydrant/uiuhbegfa_4K_Roughness.jpg",
+      "color_space":  "linear"
     }
   ],
   "models": [
@@ -17,6 +29,10 @@
 	{
 		"name": "cube",
 		"path": "assets/fbx/cube.obj"
+	},
+	{
+		"name": "sphere",
+		"path": "assets/sphere.obj"
 	}
   ]
 }
