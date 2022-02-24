@@ -1,6 +1,7 @@
 #version 450
 #extension GL_GOOGLE_include_directive : enable
 
+#include "globals.glsl"
 #include "global_vert.glsl"
 
 layout(location = 0) in vec3 inPosition;

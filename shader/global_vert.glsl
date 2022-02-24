@@ -1,10 +1,3 @@
-
-layout(set = 0, binding = 0) uniform UniformBufferObject {
-    mat4 V;
-    mat4 P;
-	mat4 M[16];
-} globals;
-
 layout( push_constant ) uniform constants
 {
 	uint object_index;

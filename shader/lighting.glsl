@@ -40,10 +40,7 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 }
 
 struct LightingData {
-	vec3 light_pos;
-	vec3 light_color;
 	vec3 world_pos;
-	vec3 cam_pos;
 	
 	float roughness;
 	float metallic;
@@ -52,35 +49,45 @@ struct LightingData {
 };
 
 vec3 lighting_direct(LightingData data) {
+	vec3 camera_pos = globals.camera_position;
+
 	vec3 F0 = vec3(0.04); 
     F0 = mix(F0, data.albedo, data.metallic);
-	vec3 V = normalize(data.cam_pos - data.world_pos);
+	vec3 V = normalize(camera_pos - data.world_pos);
 	vec3 N = normalize(data.normal);
 	
+	vec3 Lo = vec3(0);
 	//per-light from here
+	for (int i = 0; i < globals.num_lights; i++) {
+		vec3 light_color = globals.lights[i].color.xyz;
+		vec3 light_pos = vec3(globals.lights[i].M * vec4(0,0,0,1.0));
 	
-	vec3 L = normalize(data.light_pos - data.world_pos);
-	vec3 H = normalize(V + L);
-	
-	
-	float distance    = length(data.light_pos - data.world_pos);
-	float attenuation = 1.0 / (distance * distance);
-	vec3 radiance     = data.light_color * attenuation;        
-	
-	// cook-torrance brdf
-	float NDF = DistributionGGX(N, H, data.roughness);        
-	float G   = GeometrySmith(N, V, L, data.roughness);      
-	vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);       
-	
-	vec3 kS = F;
-	vec3 kD = vec3(1.0) - kS;
-	kD *= 1.0 - data.metallic;	  
-	
-	vec3 numerator    = NDF * G * F;
-	float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
-	vec3 specular     = numerator / denominator;  
+		vec3 L = normalize(light_pos - data.world_pos);
+		vec3 H = normalize(V + L);
 		
-	// add to outgoing radiance Lo
-	float NdotL = max(dot(N, L), 0.0);                
-	return (kD * data.albedo / PI + specular) * radiance * NdotL; 
+		
+		float distance    = length(light_pos - data.world_pos);
+		float attenuation = 1.0 / (distance * distance);
+		vec3 radiance     = light_color * attenuation;        
+		
+		// cook-torrance brdf
+		float NDF = DistributionGGX(N, H, data.roughness);        
+		float G   = GeometrySmith(N, V, L, data.roughness);      
+		vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);       
+		
+		vec3 kS = F;
+		vec3 kD = vec3(1.0) - kS;
+		kD *= 1.0 - data.metallic;	  
+		
+		vec3 numerator    = NDF * G * F;
+		float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
+		vec3 specular     = numerator / denominator;  
+			
+		// add to outgoing radiance Lo
+		float NdotL = max(dot(N, L), 0.0);                
+		Lo += (kD * data.albedo / PI + specular) * radiance * NdotL; 
+	}
+	
+	return Lo;
+		
 }

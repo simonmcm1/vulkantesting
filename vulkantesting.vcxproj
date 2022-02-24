@@ -160,6 +160,7 @@
     <ClCompile Include="src\renderer.cpp" />
     <ClCompile Include="src\swapchain.cpp" />
     <ClCompile Include="src\texture.cpp" />
+    <ClCompile Include="src\transform.cpp" />
     <ClCompile Include="src\window.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -181,6 +182,7 @@
     <ClInclude Include="src\semaphore.h" />
     <ClInclude Include="src\swapchain.h" />
     <ClInclude Include="src\texture.h" />
+    <ClInclude Include="src\transform.h" />
     <ClInclude Include="src\window.h" />
   </ItemGroup>
   <ItemGroup>

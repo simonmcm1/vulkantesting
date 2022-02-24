@@ -204,7 +204,7 @@ void Renderer::init_descriptor_set_layout() {
     vk::DescriptorSetLayoutBinding ubo_layout(0,
         vk::DescriptorType::eUniformBuffer,
         1,
-        vk::ShaderStageFlagBits::eVertex,
+        vk::ShaderStageFlagBits::eAll,
         nullptr);
     std::array<vk::DescriptorSetLayoutBinding, 1> bindings{ ubo_layout };
     vk::DescriptorSetLayoutCreateInfo create_info({}, static_cast<uint32_t>(bindings.size()), bindings.data());
@@ -258,6 +258,9 @@ void Renderer::update_uniform_buffers(uint32_t current_image, const std::vector<
     }
     ubo.V = camera.view();
     ubo.P = camera.projection();
+    ubo.camera_position = camera.transform.position;
+
+    light_manager.assign_lightdata(ubo);
 
     uniform_buffers[current_image].store(&ubo);
 }

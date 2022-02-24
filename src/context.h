@@ -11,10 +11,19 @@
 #include <vector>
 #include <optional>
 
+#define MAX_LIGHTDATA 16
+struct LightData {
+    alignas(16) glm::mat4 M;
+    alignas(16) glm::vec4 color;
+};
+
 struct UniformBufferObject {
     alignas(16) glm::mat4 V;
     alignas(16) glm::mat4 P;
-    alignas(16) glm::mat4 M[16];
+    alignas(16) glm::mat4 M[256];
+    alignas(16) glm::vec3 camera_position;
+    alignas(16) LightData lights[MAX_LIGHTDATA];
+    alignas(4) uint32_t num_lights;
 };
 
 struct PushConstants {

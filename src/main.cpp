@@ -30,6 +30,7 @@ private:
     MeshObject* plane;
     float plane_rot = 0.0f;
     MeshObject* plane2;
+    Light* point_light;
     float plane2_rot = 0.0f;
     ColoredMaterial *colored_mat;
     glm::vec4 color{0.0f, 0.0f, 1.0f, 1.0f};
@@ -38,6 +39,14 @@ private:
 void Application::run() {
     engine.asset_manager.load_assets();
     plane = &engine.create_meshobject();
+
+    point_light = &engine.renderer.get_light_manager().create_light();
+    point_light->color = glm::vec4(50, 50, 50, 1);
+    point_light->transform.position = glm::vec3(3.0, -3.0, 3.0);
+    auto &point_light2 = engine.renderer.get_light_manager().create_light();
+    point_light2.color = glm::vec4(20, 70, 50, 1);
+    point_light2.transform.position = glm::vec3(3.0, 3.0, 3.0);
+
 
     //auto hydrant = engine.asset_manager.get_model("fire-hydrant");
     auto hydrant = engine.asset_manager.get_model("sphere");
@@ -93,6 +102,9 @@ void Application::run() {
 void Application::update() {
     plane_rot = plane_rot + glm::radians(90.0f) * engine.clock.delta_time;
     plane->transform.set_rotation(glm::vec3(glm::radians(90.0), 0, plane_rot));
+    
+    point_light->transform.position.y += engine.clock.delta_time * 1.0;
+
     //plane2_rot = plane2_rot - glm::radians(90.0f) * engine.clock.delta_time;
     //plane2->transform.set_rotation(glm::vec3(0, 0, plane2_rot));
 

@@ -1,7 +1,9 @@
 #version 450
+
+#include "globals.glsl"
 #include "lighting.glsl"
 
-layout(set = 1, binding = 0) uniform UniformBufferObject {
+layout(set = 1, binding = 0) uniform MaterialUniformBufferObject {
     vec4 color;
 } ubo;
 layout(set = 1, binding = 1) uniform sampler2D albedoTex;
@@ -16,14 +18,8 @@ layout(location = 3) in vec3 world_position;
 layout(location = 4) in mat3 TBN;
 
 void main() {
-//    outColor = vec4(vertexColor.xyz, 1.0);
-//    outColor = vec4(uv, 0.0, 1.0);
-
-	vec3 lightColor = vec3(50.0, 50.9, 50.9);
 	float ambientStrength = 0.002;
-	vec3 lightPos = vec3(3.0, -3.0, 3.0);
-	vec3 camera_pos = vec3(4.0, 4.0, 4.0);
-	
+	vec3 ambient_color = vec3(1,1,1);
 	vec3 albedo = ubo.color.xyz;
 	vec3 normal = normalize(vertex_normal);
 
@@ -31,18 +27,14 @@ void main() {
 	float roughness = 0.5;
 
 	LightingData light_data;
-	light_data.light_pos = lightPos;
-	light_data.light_color = lightColor;
 	light_data.world_pos = world_position;
-	light_data.cam_pos = camera_pos;
 	light_data.roughness = roughness;
 	light_data.metallic = 0.5;
 	light_data.albedo = albedo;
 	light_data.normal = normal;
 	
-	
 
-	vec3 lightDir = normalize(lightPos - world_position);  
+	/*vec3 lightDir = normalize(lightPos - world_position);  
 	float diff = max(dot(normal, lightDir), 0.0);
 	
 	vec3 viewDir = normalize(camera_pos - world_position);
@@ -50,9 +42,9 @@ void main() {
 	float spec = pow(max(dot(viewDir, reflectDir), 0.0), 64);
 	vec3 specular = 0.5 * spec * lightColor;  	
 	vec3 diffuse = diff * lightColor;
-
+*/
 	
-	vec3 ambient = ambientStrength * lightColor;
+	vec3 ambient = ambientStrength * ambient_color;
 	vec3 direct = lighting_direct(light_data);
 	outColor = vec4(albedo * ambient + direct, 1.0);
 //	outColor = vec4(albedo * (ambient + diffuse + specular), 1.0);

@@ -9,6 +9,7 @@
 #include "object.h"
 #include "mesh.h"
 #include "asset_manager.h"
+#include "light.h"
 #include "material.h"
 
 #include <memory>
@@ -67,9 +68,15 @@ public:
         return material_manager;
     }
 
+    LightManager& get_light_manager() {
+        return light_manager;
+    }
+
+
 private:
     AssetManager& asset_manager;
     MaterialManager material_manager;
+    LightManager light_manager;
 
     Context &context;
     Swapchain swapchain;
@@ -83,6 +90,7 @@ private:
     std::vector<FrameSync> sync;
     std::vector<Buffer> uniform_buffers;
     std::vector<MeshRenderer*> mesh_renderers;
+
     std::unique_ptr<Texture> depth_texture;
     
 

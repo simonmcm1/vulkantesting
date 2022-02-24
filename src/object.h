@@ -1,25 +1,11 @@
 #pragma once
-#include <glm/glm.hpp>
-#include <glm/gtc/quaternion.hpp>
 
+#include "transform.h"
 #include "mesh.h"
 
 class Renderer;
 class Engine;
 
-class Transform {
-public:
-	glm::vec3 position;
-	glm::quat rotation;
-	glm::vec3 scale;
-	
-	Transform() : position(glm::vec3(0)), rotation(glm::vec3(0)), scale(glm::vec3(1)) {};
-
-	void set_rotation(const glm::vec3& euler);
-	glm::mat4 matrix();
-	glm::vec3 forward();
-	
-};
 
 class Object {
 public:
