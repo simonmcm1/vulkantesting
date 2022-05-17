@@ -4,6 +4,7 @@
 
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
+#include <glm/gtx/orthonormalize.hpp>
 #include <vector>
 
 struct Vertex {
@@ -66,3 +67,5 @@ const Mesh QUAD = {
      {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
      {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}},
     {0, 1, 2, 2, 3, 0}};
+
+void RecalculateTangents(Mesh& mesh);

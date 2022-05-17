@@ -49,9 +49,10 @@ void Application::run() {
 
 
     //auto hydrant = engine.asset_manager.get_model("fire-hydrant");
-    auto hydrant = engine.asset_manager.get_model("sphere");
+    //auto hydrant = engine.asset_manager.get_model("sphere");
+    auto hydrant = engine.asset_manager.get_model("gltf-box");
     //plane->mesh_renderer->load(hydrant->meshes.at("Aset_street__S_uiuhbegfa_LOD0"));
-    plane->mesh_renderer->load(hydrant->meshes.at("defaultobject"));
+    plane->mesh_renderer->load(hydrant->meshes.at("Mesh_0"));
     //auto hydrant = engine.asset_manager.get_model("cube");
     //plane->mesh_renderer->load(hydrant->meshes.at("defaultobject"));
     //plane->transform.scale = glm::vec3(0.05, 0.05, 0.05);

@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <filesystem>
 
 const std::string AssetManager::ASSETS_FILE_PATH = "assets/assets.json";
 
@@ -23,7 +24,18 @@ void AssetManager::load_assets()
 
 	std::cout << "loading models" << std::endl;
 	for (auto& model : assets_list.models) {
-		model.model = Model::load_fbx(context, model.path);
+		std::filesystem::path path = model.path;
+		if (path.extension() == ".gltf") {
+			model.model = Model::load_gltf(context, model.path);
+		}
+		else if (path.extension() == ".fbx" || path.extension() == ".obj") {
+			model.model = Model::load_fbx(context, model.path);
+		}
+		else {
+			std::string err = "unknown extension in asset manager model " + model.name;
+			throw std::runtime_error(err);
+		}
+		
 		models[model.name] = std::move(model);
 	}
 	std::cout << "loaded " << models.size() << " model assets" << std::endl;

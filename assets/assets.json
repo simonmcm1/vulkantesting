@@ -30,9 +30,13 @@
 		"name": "cube",
 		"path": "assets/fbx/cube.obj"
 	},
-	{
-		"name": "sphere",
-		"path": "assets/sphere.obj"
-	}
+    {
+      "name": "sphere",
+      "path": "assets/sphere.obj"
+    },
+    {
+      "name": "gltf-box",
+      "path": "assets/gltf/box/box.gltf"
+    }
   ]
 }

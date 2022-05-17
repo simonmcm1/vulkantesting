@@ -117,7 +117,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\simon\source\repos\vulkantesting\vcpkg\installed\x64-windows\include;C:\VulkanSDK\1.2.198.1\Third-Party\Include;C:\VulkanSDK\1.2.198.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\simon\source\repos\vulkantesting\thirdparty\tiny_gltf;C:\Users\simon\source\repos\vulkantesting\vcpkg\installed\x64-windows\include;C:\VulkanSDK\1.2.198.1\Third-Party\Include;C:\VulkanSDK\1.2.198.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ShowIncludes>false</ShowIncludes>
     </ClCompile>

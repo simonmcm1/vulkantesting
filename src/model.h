@@ -7,4 +7,5 @@ public:
 	std::unordered_map<std::string, Mesh> meshes;
 
 	static std::unique_ptr<Model> load_fbx(Context &context, const std::string& path);
+	static std::unique_ptr<Model> load_gltf(Context& context, const std::string& path);
 };
