@@ -38,26 +38,30 @@ private:
 
 void Application::run() {
     engine.asset_manager.load_assets();
-    plane = &engine.create_meshobject();
+    //plane = &engine.create_meshobject();
+
+    auto &scene = engine.create_sceneobject();
+    auto model = engine.asset_manager.get_model("city-scene");
+    scene.load_model(engine, model);
 
     point_light = &engine.renderer.get_light_manager().create_light();
     point_light->color = glm::vec4(50, 50, 50, 1);
-    point_light->transform.position = glm::vec3(3.0, -3.0, 3.0);
+    point_light->transform.position = glm::vec3(3.0, 20.0, 3.0);
     auto &point_light2 = engine.renderer.get_light_manager().create_light();
     point_light2.color = glm::vec4(20, 70, 50, 1);
-    point_light2.transform.position = glm::vec3(3.0, 3.0, 3.0);
+    point_light2.transform.position = glm::vec3(10.0, 3.0, 3.0);
 
 
     //auto hydrant = engine.asset_manager.get_model("fire-hydrant");
     //auto hydrant = engine.asset_manager.get_model("sphere");
-    auto hydrant = engine.asset_manager.get_model("gltf-box");
+    //auto hydrant = engine.asset_manager.get_model("city-scene");
     //plane->mesh_renderer->load(hydrant->meshes.at("Aset_street__S_uiuhbegfa_LOD0"));
-    plane->mesh_renderer->load(hydrant->meshes.at("Mesh_0"));
+    //plane->mesh_renderer->load(hydrant->meshes.at("Object_0_0"));
     //auto hydrant = engine.asset_manager.get_model("cube");
     //plane->mesh_renderer->load(hydrant->meshes.at("defaultobject"));
     //plane->transform.scale = glm::vec3(0.05, 0.05, 0.05);
-    plane->transform.set_rotation(glm::vec3(glm::radians(90.0), 0, 0));
-    plane->transform.position = glm::vec3(0, 0, -1.0f);
+    //plane->transform.set_rotation(glm::vec3(glm::radians(90.0), 0, 0));
+    //plane->transform.position = glm::vec3(0, 0, -1.0f);
 
     //plane2 = &engine.create_meshobject();
     //plane2->mesh_renderer->load(QUAD);
@@ -79,11 +83,12 @@ void Application::run() {
     auto cmat = material_manager.get_instance<ColoredMaterial>("colored");
     auto fmat = cmat.get();
     fmat->set_color(glm::vec4(0.81, 0.0, 0.0, 1.0));
+    
 
     //auto mat2 = material_manager.get_instance<BasicMaterial>("basic");
     //mat2->albedo_texture = "smile";
 
-    plane->mesh_renderer->material = fmat;
+    ///plane->mesh_renderer->material = fmat;
 
     //plane2->mesh_renderer->material = mat2.get();
 
@@ -91,9 +96,9 @@ void Application::run() {
     engine.camera->fov = glm::radians(45.0f);
     engine.camera->aspect = window->width / (float)window->height;
     engine.camera->near_clip = 0.1f;
-    engine.camera->far_clip = 10.0;
-    engine.camera->transform.position = glm::vec3(4.0f, 4.0f, 4.0f);
-    engine.camera->transform.rotation = glm::quatLookAt(glm::normalize(glm::vec3(0) - glm::vec3(5.0)), glm::vec3(0, 0, 1));
+    engine.camera->far_clip = 100.0;
+    engine.camera->transform.position = glm::vec3(20.0f, 20.0f, 20.0f);
+    engine.camera->transform.rotation = glm::quatLookAt(glm::normalize(glm::vec3(0) - glm::vec3(40.0)), glm::vec3(0, 1, 0));
 
     main_loop();
     
@@ -101,10 +106,10 @@ void Application::run() {
 }
 
 void Application::update() {
-    plane_rot = plane_rot + glm::radians(90.0f) * engine.clock.delta_time;
-    plane->transform.set_rotation(glm::vec3(glm::radians(90.0), 0, plane_rot));
+    //plane_rot = plane_rot + glm::radians(90.0f) * engine.clock.delta_time;
+    //plane->transform.set_rotation(glm::vec3(glm::radians(90.0), 0, plane_rot));
     
-    point_light->transform.position.y += engine.clock.delta_time * 1.0;
+    //point_light->transform.position.y += engine.clock.delta_time * 1.0;
 
     //plane2_rot = plane2_rot - glm::radians(90.0f) * engine.clock.delta_time;
     //plane2->transform.set_rotation(glm::vec3(0, 0, plane2_rot));
@@ -133,13 +138,13 @@ void Application::close() {
 }
 
 int main() {
-    try {
+//    try {
         Application app;
         app.run();
-    } catch (const std::exception& e) {
-        std::cerr << "Caught Exception: " << e.what() << std::endl;
-        return EXIT_FAILURE;
-    }
+//    } catch (const std::exception& e) {
+//        std::cerr << "Caught Exception: " << e.what() << std::endl;
+//        return EXIT_FAILURE;
+//   }
 
     return EXIT_SUCCESS;
 }

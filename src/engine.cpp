@@ -54,3 +54,12 @@ MeshObject& Engine::create_meshobject()
 	//TODO: wtf is this
 	return dynamic_cast<MeshObject&>(*objects.back());
 }
+
+SceneObject& Engine::create_sceneobject()
+{
+	auto so = std::make_unique<SceneObject>(context);
+	objects.push_back(std::move(so));
+	//TODO: wtf is this
+	return dynamic_cast<SceneObject&>(*objects.back());
+}
+

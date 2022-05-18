@@ -15,6 +15,8 @@
 #include <queue>
 #include <iostream>
 
+#include <glm/gtc/type_ptr.hpp>
+
 std::unique_ptr<Model> Model::load_fbx(Context& context, const std::string& path)
 {
 	auto model = std::make_unique<Model>();
@@ -143,29 +145,10 @@ glm::vec4 vec4_from_buffer(uint8_t* buffer_pointer) {
 	return glm::vec4(*x, *y, *z, *w);
 }
 
-std::unique_ptr<Model> Model::load_gltf(Context& context, const std::string& path)
-{
-	tinygltf::TinyGLTF loader;
-	tinygltf::Model gltf;
-	std::string err;
-	std::string warn;
-	loader.LoadASCIIFromFile(&gltf, &err, &warn, path);
-
-	if (!err.empty()) {
-		throw std::runtime_error("error loading gltf model " + err);
-	}
-
-	if (!warn.empty()) {
-		std::cout << "warning while loading model:" << warn << std::endl;
-	}
-
-	auto model = std::make_unique<Model>();
-
-	std::vector<Buffer> buffers;
-
+void load_meshes(Model* model, tinygltf::Model& gltf) {
 	for (const auto& mesh : gltf.meshes) {
 		//std::cout << "mesh " << mesh.name << std::endl;
-
+		uint32_t prim_index = 0;
 		for (const auto& prim : mesh.primitives) {
 			Mesh m;
 			uint32_t vertex_count = gltf.accessors[prim.attributes.find("POSITION")->second].count;
@@ -182,7 +165,7 @@ std::unique_ptr<Model> Model::load_gltf(Context& context, const std::string& pat
 						glm::vec3 pos = vec3_from_buffer(&gltf.buffers[view.buffer].data[index]);
 						m.vertices[i].pos = pos;
 					}
-	
+
 					assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
 					assert(accessor.type == TINYGLTF_TYPE_VEC3);
 				}
@@ -209,17 +192,92 @@ std::unique_ptr<Model> Model::load_gltf(Context& context, const std::string& pat
 			auto& view = gltf.bufferViews[accessor.bufferView];
 			for (uint32_t i = 0; i < accessor.count; i++) {
 				uint32_t index = accessor.byteOffset + view.byteOffset + accessor.ByteStride(view) * i;
-				uint16_t* idx = (uint16_t*)&gltf.buffers[view.buffer].data[index];
-				m.indices.push_back(static_cast<uint32_t>(*idx));
+				if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
+					uint16_t* idx = (uint16_t*)&gltf.buffers[view.buffer].data[index];
+					m.indices.push_back(static_cast<uint32_t>(*idx));
+				}
+				else if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT) {
+					uint32_t* idx = (uint32_t*)&gltf.buffers[view.buffer].data[index];
+					m.indices.push_back(*idx);
+				}
+				else {
+					throw std::runtime_error("unhandled GLTX indices component type");
+				}
 			}
-			assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT);
 			assert(accessor.type == TINYGLTF_TYPE_SCALAR);
 
 			RecalculateTangents(m);
 
-			model->meshes[mesh.name + "_0"] = m;
+			model->meshes[mesh.name + "_" + std::to_string(prim_index++)] = m;
 		}
 	}
+}
+
+SceneNode* load_node(Model* model, tinygltf::Model& gltf, uint32_t index, const glm::mat4 &parent_matrix) {
+	const auto& node = gltf.nodes.at(index);
+	
+	SceneNode scene_node;
+	if (node.mesh >= 0) {
+		scene_node.mesh = gltf.meshes[node.mesh].name + "_0";
+		scene_node.name = node.name;
+		//TODO: handle multiple primitives per mesh. scene_node.mesh should be a vector maybe?
+	}
+	
+	if (node.matrix.empty()) {
+		//pos,rot,scale
+		if(node.translation.size() > 0)
+			scene_node.transform.position = glm::vec3(node.translation[0], node.translation[1], node.translation[2]);
+		if(node.rotation.size() > 0)
+			scene_node.transform.rotation = glm::quat(node.rotation[0], node.rotation[1], node.rotation[2], node.rotation[3]);
+		if(node.scale.size() > 0)
+			scene_node.transform.scale = glm::vec3(node.scale[0], node.scale[1], node.scale[2]);
+	}
+	else {
+		//matrix
+		scene_node.transform.set_matrix(glm::make_mat4(node.matrix.data()));
+	}
+
+	//transform by the parents matrix
+	glm::mat4 global_matrix = scene_node.transform.matrix() * parent_matrix;
+	scene_node.transform.set_matrix(global_matrix);
+
+	for (uint32_t node_index : node.children) {
+		scene_node.children.push_back(load_node(model, gltf, node_index, global_matrix));
+	}
+
+	model->nodes[node.name] = scene_node;
+	return &model->nodes[node.name];
+}
+
+void load_nodes(Model* model, tinygltf::Model &gltf) {
+	auto scene = gltf.scenes.at(gltf.defaultScene);
+
+	for (uint32_t node_index : scene.nodes) {
+		model->scene_root.children.push_back(load_node(model, gltf, node_index, model->scene_root.transform.matrix()));
+	}
+}
+
+std::unique_ptr<Model> Model::load_gltf(Context& context, const std::string& path)
+{
+	tinygltf::TinyGLTF loader;
+	tinygltf::Model gltf;
+	std::string err;
+	std::string warn;
+	loader.LoadASCIIFromFile(&gltf, &err, &warn, path);
+
+	if (!err.empty()) {
+		throw std::runtime_error("error loading gltf model " + err);
+	}
+
+	if (!warn.empty()) {
+		std::cout << "warning while loading model:" << warn << std::endl;
+	}
+
+	auto model = std::make_unique<Model>();
+
+	load_meshes(model.get(), gltf);
+	load_nodes(model.get(), gltf);
+
 
 	return model;
 }

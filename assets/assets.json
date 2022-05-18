@@ -37,6 +37,10 @@
     {
       "name": "gltf-box",
       "path": "assets/gltf/box/box.gltf"
+    },
+    {
+      "name": "city-scene",
+      "path": "assets/gltf/city_scene_tokyo/scene.gltf"
     }
   ]
 }

@@ -39,6 +39,7 @@ public:
 	Context& get_context();
 	Object& create_object();
 	MeshObject& create_meshobject();
+	SceneObject& create_sceneobject();
 	Texture& create_texture(const std::string &filepath);
 
 	Clock clock;
